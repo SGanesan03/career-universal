@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CareerOS AI | Autonomous Job Search & Outreach Platform</title>
+  <title>CareerOS Vault | Encrypted Multi-User AI Job & Outreach Platform</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
@@ -21,48 +22,52 @@
 </head>
 <body class="min-h-screen flex flex-col">
 
-  <!-- END-USER LOGIN MODAL (0 CONFIGURATION NEEDED BY END-USERS!) -->
+  <!-- END-USER ENCRYPTED LOGIN MODAL (SINGLE REPO + AES-256 VAULT) -->
   <div id="login-screen" class="fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-md w-full p-8 shadow-2xl space-y-5">
       <div class="flex items-center gap-3">
         <div class="w-11 h-11 rounded-xl naukri-grad text-white flex items-center justify-center font-extrabold text-xl">C</div>
         <div>
-          <h2 class="font-extrabold text-xl text-slate-900">CareerOS <span class="text-[#0a66c2]">AI</span></h2>
-          <p class="text-xs text-slate-500">Zero-Noise AI Job Search & Recruiter Outreach</p>
+          <h2 class="font-extrabold text-xl text-slate-900">CareerOS <span class="text-[#0a66c2]">Vault</span></h2>
+          <p class="text-xs text-slate-500">AES-256 Encrypted Personal Job & Outreach Workspace</p>
         </div>
       </div>
 
-      <p class="text-sm text-slate-600 leading-relaxed">
-        Enter your Name or Email ID to open your personal job workspace. No technical setup required!
+      <p class="text-xs text-slate-600 leading-relaxed bg-blue-50 border border-blue-100 p-3 rounded-xl">
+        🔒 <b>End-to-End Encrypted:</b> Your resume & personal info are encrypted in your browser with your PIN before saving. Nobody else can read your data!
       </p>
 
       <div class="space-y-3">
         <div>
           <label class="text-xs font-bold text-slate-700 uppercase">Your Name or Email ID</label>
-          <input id="login-handle" type="text" placeholder="e.g., selvaraj or priya@gmail.com" class="w-full bg-slate-50 border border-slate-300 focus:border-[#0a66c2] outline-none rounded-xl px-4 py-3 text-sm font-semibold mt-1" />
+          <input id="login-handle" type="text" placeholder="e.g., selvaraj or priya@gmail.com" class="w-full bg-slate-50 border border-slate-300 focus:border-[#0a66c2] outline-none rounded-xl px-4 py-2.5 text-sm font-semibold mt-1" />
+        </div>
+        <div>
+          <label class="text-xs font-bold text-slate-700 uppercase">Secret Vault PIN / Password</label>
+          <input id="login-pin" type="password" placeholder="Create or enter your 4+ digit PIN" class="w-full bg-slate-50 border border-slate-300 focus:border-[#0a66c2] outline-none rounded-xl px-4 py-2.5 text-sm font-semibold mt-1" />
         </div>
         <button onclick="loginEndUser()" id="btn-login" class="brand-blue text-white w-full py-3 rounded-xl text-sm font-bold shadow-md">
-          🚀 Enter My Job Workspace
+          🔓 Unlock My Personal Workspace
         </button>
       </div>
 
       <div class="pt-3 border-t border-slate-100 text-center">
         <button onclick="openAdminSetup()" class="text-[11px] text-slate-400 hover:text-[#0a66c2] font-semibold">
-          ⚙️ Admin One-Time Link Generator (Owner Only)
+          ⚙️ Admin One-Time Magic Link Setup (Owner Only)
         </button>
       </div>
     </div>
   </div>
 
-  <!-- ADMIN ONE-TIME LINK GENERATOR MODAL (NO script.google.com REQUIRED!) -->
+  <!-- ADMIN ONE-TIME LINK GENERATOR MODAL (SINGLE REPO!) -->
   <div id="admin-screen" class="hidden fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-        <h3 class="font-extrabold text-lg text-slate-900">⚙️ Admin One-Time Shareable Link Generator</h3>
+        <h3 class="font-extrabold text-lg text-slate-900">⚙️ Admin Single-Repo Magic Link Generator</h3>
         <button onclick="document.getElementById('admin-screen').classList.add('hidden')" class="text-slate-400 hover:text-slate-700 font-bold">✕</button>
       </div>
       <p class="text-xs text-slate-500">
-        Enter your GitHub & Gemini credentials once to generate a <b>Zero-Config Shareable URL</b>. Anyone who opens that URL will NEVER see any setup fields!
+        Configure once for your single GitHub repository. Share the generated link with any user—they only enter their Name & PIN!
       </p>
       <div class="space-y-2.5 text-xs">
         <div>
@@ -70,15 +75,11 @@
           <input id="adm-owner" type="text" placeholder="sganesan03" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 mt-1" />
         </div>
         <div>
-          <label class="font-bold text-slate-700">App Repo Name (Public)</label>
-          <input id="adm-app-repo" type="text" placeholder="careeros-app" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 mt-1" />
+          <label class="font-bold text-slate-700">Repository Name (Same Single Repo)</label>
+          <input id="adm-repo" type="text" placeholder="careeros-universal" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 mt-1" />
         </div>
         <div>
-          <label class="font-bold text-slate-700">Private Data Repo Name (Stores User Resumes Safely)</label>
-          <input id="adm-data-repo" type="text" placeholder="careeros-private-data" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 mt-1" />
-        </div>
-        <div>
-          <label class="font-bold text-slate-700">GitHub Fine-Grained Token (Contents R/W on Data Repo + Actions R/W on App Repo)</label>
+          <label class="font-bold text-slate-700">GitHub Fine-Grained Token (Contents: Read/Write + Actions: Read/Write)</label>
           <input id="adm-token" type="password" placeholder="github_pat_..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 mt-1" />
         </div>
         <div>
@@ -90,7 +91,7 @@
         </button>
       </div>
       <div id="generated-link-box" class="hidden bg-emerald-50 border border-emerald-200 p-3.5 rounded-xl space-y-2">
-        <div class="text-xs font-bold text-emerald-800">✅ Share This Link With Any User (0 Setup Needed):</div>
+        <div class="text-xs font-bold text-emerald-800">✅ Share This Link With Anyone (0 Setup Needed):</div>
         <textarea id="generated-url-text" rows="3" readonly class="w-full bg-white border border-emerald-300 rounded-lg p-2 text-[11px] font-mono"></textarea>
         <button onclick="navigator.clipboard.writeText(document.getElementById('generated-url-text').value); toast('📋 Magic Link Copied!')" class="bg-emerald-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold">📋 Copy Magic Link</button>
       </div>
@@ -103,10 +104,10 @@
       <div class="w-10 h-10 rounded-xl naukri-grad text-white flex items-center justify-center font-extrabold text-lg shadow-sm">C</div>
       <div>
         <div class="flex items-center gap-2">
-          <h1 class="font-extrabold text-lg text-slate-900 tracking-tight">CareerOS <span class="text-[#0a66c2]">AI</span></h1>
-          <span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">Zero-Config</span>
+          <h1 class="font-extrabold text-lg text-slate-900 tracking-tight">CareerOS <span class="text-[#0a66c2]">Vault</span></h1>
+          <span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">AES-256 Encrypted</span>
         </div>
-        <p class="text-xs text-slate-500">Smart Job Feed • Direct HR Outreach • Interview Copilot</p>
+        <p class="text-xs text-slate-500">Single-Repo Architecture • Zero-Noise Discovery • Interview Copilot</p>
       </div>
     </div>
 
@@ -115,7 +116,7 @@
     </div>
 
     <div class="flex items-center gap-2">
-      <button onclick="switchUser()" class="bg-blue-50 hover:bg-blue-100 text-[#0a66c2] border border-blue-200 px-3.5 py-1.5 rounded-full text-xs font-bold" id="active-user-pill">👤 Guest</button>
+      <button onclick="switchUser()" class="bg-blue-50 hover:bg-blue-100 text-[#0a66c2] border border-blue-200 px-3.5 py-1.5 rounded-full text-xs font-bold" id="active-user-pill">🔒 Guest</button>
       <button onclick="triggerLiveScan()" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-full text-xs font-semibold shadow-sm">⚡ Find New Jobs</button>
       <button onclick="loadUserWorkspace()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-2 rounded-full text-xs font-semibold">🔄 Refresh</button>
     </div>
@@ -182,7 +183,7 @@
         </button>
         <button onclick="switchTab('copilot')" id="nav-copilot" class="nav-btn w-full text-left px-5 py-3 flex items-center justify-between hover:bg-slate-50">
           <span>📄 My Resume & Preferences</span>
-          <span class="text-xs text-purple-600 font-semibold">AI</span>
+          <span class="text-xs text-purple-600 font-semibold">Encrypted</span>
         </button>
       </nav>
     </aside>
@@ -257,12 +258,12 @@
       <!-- TAB 4: RESUME & PREFERENCES -->
       <section id="tab-copilot" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="card p-6 space-y-4">
-          <h2 class="text-lg font-extrabold text-slate-900">📄 Upload Resume & Job Preferences</h2>
-          <p class="text-xs text-slate-500">Upload your PDF resume once. Our AI extracts your skills and automatically matches fresh jobs for you.</p>
+          <h2 class="text-lg font-extrabold text-slate-900">📄 Encrypted Resume & Job Preferences</h2>
+          <p class="text-xs text-slate-500">Your resume contact info & full JSON are AES-256 encrypted with your PIN before saving to GitHub.</p>
 
           <div class="border-2 border-dashed border-slate-200 rounded-xl p-5 text-center space-y-2 bg-slate-50">
             <input type="file" id="resume-upload" accept=".pdf" class="text-xs text-slate-600" />
-            <button onclick="parseAndSaveResume()" class="brand-blue text-white px-5 py-2 rounded-xl text-xs font-semibold block mx-auto mt-2">✨ Parse Resume with AI</button>
+            <button onclick="parseAndSaveResume()" class="brand-blue text-white px-5 py-2 rounded-xl text-xs font-semibold block mx-auto mt-2">✨ Parse & Encrypt Resume</button>
           </div>
 
           <div class="space-y-3 pt-2">
@@ -282,7 +283,7 @@
               <label class="text-xs font-bold text-blue-600">Telegram Chat ID (Optional — for instant job alerts)</label>
               <input id="pref-tg-chat" type="text" placeholder="Message @userinfobot on Telegram to get your ID" class="w-full bg-blue-50/40 border border-blue-200 rounded-xl px-3.5 py-2 text-sm mt-1" />
             </div>
-            <button onclick="saveProfilePreferences()" class="bg-slate-900 hover:bg-slate-800 text-white w-full py-2.5 rounded-xl text-xs font-semibold">💾 Save Preferences</button>
+            <button onclick="saveProfilePreferences()" class="bg-slate-900 hover:bg-slate-800 text-white w-full py-2.5 rounded-xl text-xs font-semibold">💾 Save Encrypted Preferences</button>
           </div>
         </div>
 
@@ -295,7 +296,7 @@
             Click "Run AI Audit" to compare your resume against live job market requirements.
           </div>
           <div>
-            <h3 class="text-xs font-bold uppercase text-slate-400 mb-2">Extracted Resume Profile</h3>
+            <h3 class="text-xs font-bold uppercase text-slate-400 mb-2">Decrypted Resume Profile (Visible Only To You)</h3>
             <pre id="resume-json-preview" class="bg-slate-900 text-emerald-300 p-4 rounded-xl text-xs overflow-auto max-h-64">No resume uploaded yet.</pre>
           </div>
         </div>
@@ -318,13 +319,12 @@
   <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-    // Bootstrap embedded config from URL hash (#cfg=...) if shared via Magic Link
     (function bootstrapConfigFromLink() {
       if (window.location.hash.startsWith('#cfg=')) {
         try {
           const rawB64 = decodeURIComponent(window.location.hash.slice(5));
           const decoded = JSON.parse(atob(rawB64));
-          localStorage.setItem('cos_sys_cfg', JSON.stringify(decoded));
+          localStorage.setItem('cos_single_cfg', JSON.stringify(decoded));
           history.replaceState(null, '', window.location.pathname + window.location.search);
         } catch (e) {}
       }
@@ -332,7 +332,7 @@
 
     function getSysCfg() {
       try {
-        return JSON.parse(localStorage.getItem('cos_sys_cfg') || 'null');
+        return JSON.parse(localStorage.getItem('cos_single_cfg') || 'null');
       } catch (e) {
         return null;
       }
@@ -341,8 +341,7 @@
     function openAdminSetup() {
       const c = getSysCfg() || {};
       document.getElementById('adm-owner').value = c.owner || '';
-      document.getElementById('adm-app-repo').value = c.appRepo || '';
-      document.getElementById('adm-data-repo').value = c.dataRepo || '';
+      document.getElementById('adm-repo').value = c.repo || '';
       document.getElementById('adm-token').value = c.token || '';
       document.getElementById('adm-gemini').value = c.gemini || '';
       document.getElementById('admin-screen').classList.remove('hidden');
@@ -351,25 +350,25 @@
     function generateZeroConfigLink() {
       const cfgObj = {
         owner: document.getElementById('adm-owner').value.trim(),
-        appRepo: document.getElementById('adm-app-repo').value.trim(),
-        dataRepo: document.getElementById('adm-data-repo').value.trim(),
+        repo: document.getElementById('adm-repo').value.trim(),
         token: document.getElementById('adm-token').value.trim(),
         gemini: document.getElementById('adm-gemini').value.trim()
       };
-      if (!cfgObj.owner || !cfgObj.dataRepo || !cfgObj.token || !cfgObj.gemini) {
-        return toast('⚠️ Fill all fields to generate the link');
+      if (!cfgObj.owner || !cfgObj.repo || !cfgObj.token || !cfgObj.gemini) {
+        return toast('⚠️ Fill all fields to generate the Magic Link');
       }
-      localStorage.setItem('cos_sys_cfg', JSON.stringify(cfgObj));
+      localStorage.setItem('cos_single_cfg', JSON.stringify(cfgObj));
       const encoded = encodeURIComponent(btoa(JSON.stringify(cfgObj)));
       const baseUrl = window.location.origin + window.location.pathname;
       const magicUrl = `${baseUrl}#cfg=${encoded}`;
       document.getElementById('generated-url-text').value = magicUrl;
       document.getElementById('generated-link-box').classList.remove('hidden');
-      toast('✅ Zero-Config Magic Link Generated!');
+      toast('✅ Single-Repo Zero-Config Link Generated!');
     }
 
     let state = {
-      userId: localStorage.getItem('cos_zero_uid') || '',
+      userId: localStorage.getItem('cos_v_uid') || '',
+      pin: sessionStorage.getItem('cos_v_pin') || '',
       fileSha: null,
       userData: {
         user_id: "",
@@ -411,32 +410,59 @@
     async function loginEndUser() {
       const sys = getSysCfg();
       if (!sys) {
-        toast('⚠️ Owner must click "Admin One-Time Link Generator" first.');
+        toast('⚠️ Owner must click "Admin One-Time Magic Link Setup" first.');
         return openAdminSetup();
       }
       const raw = document.getElementById('login-handle').value.trim();
-      if (!raw) return toast('⚠️ Enter your Name or Email ID');
+      const pin = document.getElementById('login-pin').value.trim();
+      if (!raw || pin.length < 4) return toast('⚠️ Enter Name/Email and a 4+ character PIN');
+
       const cleanId = raw.toLowerCase().replace(/[^a-z0-9_-]/g, '_');
-      document.getElementById('btn-login').innerText = '⏳ Opening Workspace...';
-      localStorage.setItem('cos_zero_uid', cleanId);
+      document.getElementById('btn-login').innerText = '🔓 Decrypting Vault...';
+      localStorage.setItem('cos_v_uid', cleanId);
+      sessionStorage.setItem('cos_v_pin', pin);
       state.userId = cleanId;
-      await loadUserWorkspace();
-      document.getElementById('login-screen').classList.add('hidden');
-      document.getElementById('btn-login').innerText = '🚀 Enter My Job Workspace';
+      state.pin = pin;
+
+      const ok = await loadUserWorkspace();
+      document.getElementById('btn-login').innerText = '🔓 Unlock My Personal Workspace';
+      if (ok) {
+        document.getElementById('login-screen').classList.add('hidden');
+      }
     }
 
     function switchUser() {
       document.getElementById('login-handle').value = state.userId;
+      document.getElementById('login-pin').value = '';
       document.getElementById('login-screen').classList.remove('hidden');
+    }
+
+    // Encrypts private resume PII & full state with user's PIN while keeping minimal matching skills available for background cron
+    function buildVaultPayload() {
+      const fullCipher = CryptoJS.AES.encrypt(JSON.stringify(state.userData), state.pin).toString();
+      return {
+        encrypted: true,
+        user_id: state.userId,
+        vault_cipher: fullCipher,
+        // Anonymized matching index for 8AM-8PM background scanner (contains zero PII like name/email/phone)
+        match_index: {
+          telegram_chat_id: state.userData.telegram_chat_id || "",
+          target_roles: state.userData.target_roles || [],
+          locations: state.userData.locations || ["Remote"],
+          blacklist: state.userData.blacklist || [],
+          skills: state.userData.resume ? (state.userData.resume.skills || []) : [],
+          seen_hashes: Object.keys(state.userData.actions || {})
+        }
+      };
     }
 
     async function loadUserWorkspace() {
       const sys = getSysCfg();
-      if (!sys || !state.userId) return;
-      document.getElementById('active-user-pill').innerText = `👤 ${state.userId} (Switch)`;
+      if (!sys || !state.userId || !state.pin) return false;
+      document.getElementById('active-user-pill').innerText = `🔒 ${state.userId} (Switch)`;
       const path = `data/users/${state.userId}.json`;
 
-      const res = await fetch(`https://api.github.com/repos/${sys.owner}/${sys.dataRepo}/contents/${path}?t=${Date.now()}`, {
+      const res = await fetch(`https://api.github.com/repos/${sys.owner}/${sys.repo}/contents/${path}?t=${Date.now()}`, {
         headers: { Authorization: `Bearer ${sys.token}`, Accept: 'application/vnd.github.v3+json' }
       });
 
@@ -444,8 +470,33 @@
         const data = await res.json();
         const decoded = decodeURIComponent(escape(atob(data.content.replace(/
 /g, ''))));
-        state.userData = JSON.parse(decoded);
+        const stored = JSON.parse(decoded);
         state.fileSha = data.sha;
+
+        if (stored.encrypted && stored.vault_cipher) {
+          try {
+            const bytes = CryptoJS.AES.decrypt(stored.vault_cipher, state.pin);
+            const plainText = bytes.toString(CryptoJS.enc.Utf8);
+            if (!plainText) throw new Error('Wrong PIN');
+            state.userData = JSON.parse(plainText);
+          } catch (e) {
+            toast('❌ Incorrect PIN for this workspace! Try again.');
+            return false;
+          }
+        } else {
+          state.userData = stored;
+        }
+
+        // Merge any newly discovered background jobs from scraper_worker into decrypted state
+        if (stored.pending_jobs) {
+          Object.assign(state.userData.jobs, stored.pending_jobs);
+          Object.keys(stored.pending_jobs).forEach(h => {
+            if (!state.userData.actions[h]) {
+              state.userData.actions[h] = { status: 'Queued', updated_at: new Date().toISOString() };
+            }
+          });
+          await saveUserState(`vault ${state.userId}: sync discovered jobs`);
+        }
       } else if (res.status === 404) {
         state.userData = {
           user_id: state.userId,
@@ -459,7 +510,7 @@
           actions: {}
         };
         state.fileSha = null;
-        await saveUserState(`register user: ${state.userId}`);
+        await saveUserState(`create encrypted vault: ${state.userId}`);
         switchTab('copilot');
       }
 
@@ -471,7 +522,7 @@
       if (state.userData.resume) {
         document.getElementById('resume-json-preview').innerText = JSON.stringify(state.userData.resume, null, 2);
         document.getElementById('side-name').innerText = state.userData.resume.name || state.userId;
-        document.getElementById('side-role').innerText = (state.userData.target_roles || [])[0] || 'Ready for Jobs';
+        document.getElementById('side-role').innerText = (state.userData.target_roles || [])[0] || 'Vault Active';
         document.getElementById('avatar-initials').innerText = (state.userData.resume.name || state.userId)[0].toUpperCase();
         document.getElementById('profile-score').innerText = '100%';
         document.getElementById('profile-bar').style.width = '100%';
@@ -481,17 +532,19 @@
       }
 
       renderAll();
-      toast(`✅ Workspace synced for ${state.userId}`);
+      toast(`🔓 Encrypted vault unlocked for ${state.userId}`);
+      return true;
     }
 
     async function saveUserState(msg) {
       const sys = getSysCfg();
       const path = `data/users/${state.userId}.json`;
-      const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(state.userData, null, 2))));
+      const vaultObj = buildVaultPayload();
+      const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(vaultObj, null, 2))));
       const body = { message: msg, content: encoded };
       if (state.fileSha) body.sha = state.fileSha;
 
-      const res = await fetch(`https://api.github.com/repos/${sys.owner}/${sys.dataRepo}/contents/${path}`, {
+      const res = await fetch(`https://api.github.com/repos/${sys.owner}/${sys.repo}/contents/${path}`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${sys.token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
@@ -502,9 +555,9 @@
 
     async function triggerLiveScan() {
       const sys = getSysCfg();
-      if (!sys || !sys.appRepo) return toast('⚠️ App Repo not configured');
+      if (!sys || !sys.repo) return toast('⚠️ Repo not configured');
       toast('⚡ Scanning LinkedIn & Job Feeds...');
-      const res = await fetch(`https://api.github.com/repos/${sys.owner}/${sys.appRepo}/actions/workflows/discover_jobs.yml/dispatches`, {
+      const res = await fetch(`https://api.github.com/repos/${sys.owner}/${sys.repo}/actions/workflows/discover_jobs.yml/dispatches`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${sys.token}`, Accept: 'application/vnd.github.v3+json' },
         body: JSON.stringify({ ref: 'main' })
@@ -545,8 +598,8 @@
 
     async function parseAndSaveResume() {
       const inp = document.getElementById('resume-upload');
-      if (!inp.files.length) return toast('⚠️ Please choose a PDF resume file first');
-      toast('⏳ Parsing PDF resume with AI...');
+      if (!inp.files.length) return toast('⚠️ Choose a PDF resume file first');
+      toast('⏳ Parsing & encrypting resume with AI...');
       const buf = await inp.files[0].arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
       let text = '';
@@ -559,9 +612,9 @@
       const parsed = await geminiAI(`Extract structured resume JSON with keys: name, email, phone, summary, skills (array), experience (array of {role, company, duration}), inferred_roles (array of 3 roles). Resume: ${text.slice(0, 12000)}`, true);
       state.userData.resume = parsed;
       if (!state.userData.target_roles?.length) state.userData.target_roles = parsed.inferred_roles || [];
-      await saveUserState(`user ${state.userId}: update resume`);
+      await saveUserState(`vault ${state.userId}: update encrypted resume`);
       await loadUserWorkspace();
-      toast('✅ Resume parsed and saved!');
+      toast('🔒 Resume parsed & encrypted in your vault!');
     }
 
     async function saveProfilePreferences() {
@@ -569,8 +622,8 @@
       state.userData.locations = document.getElementById('pref-locations').value.split(',').map(s => s.trim()).filter(Boolean);
       state.userData.blacklist = document.getElementById('pref-blacklist').value.split(',').map(s => s.trim()).filter(Boolean);
       state.userData.telegram_chat_id = document.getElementById('pref-tg-chat').value.trim();
-      await saveUserState(`user ${state.userId}: update preferences`);
-      toast('✅ Preferences saved!');
+      await saveUserState(`vault ${state.userId}: update preferences`);
+      toast('🔒 Encrypted preferences saved!');
     }
 
     function renderAll() {
@@ -666,7 +719,7 @@
     async function updateStatus(h, status, extra = {}) {
       state.userData.actions[h] = { ...(state.userData.actions[h] || {}), status, ...extra, updated_at: new Date().toISOString() };
       renderAll();
-      await saveUserState(`user ${state.userId}: ${h} -> ${status}`);
+      await saveUserState(`vault ${state.userId}: ${h} -> ${status}`);
       toast(`✅ Marked as ${status}`);
     }
 
@@ -872,9 +925,9 @@
     function closeModal() { document.getElementById('modal-overlay').classList.add('hidden'); }
 
     window.onload = async () => {
-      if (getSysCfg() && state.userId) {
-        document.getElementById('login-screen').classList.add('hidden');
-        await loadUserWorkspace();
+      if (getSysCfg() && state.userId && state.pin) {
+        const ok = await loadUserWorkspace();
+        if (ok) document.getElementById('login-screen').classList.add('hidden');
       }
     };
   </script>

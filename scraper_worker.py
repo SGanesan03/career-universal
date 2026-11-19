@@ -4,7 +4,7 @@ import glob
 import json
 import hashlib
 import urllib.parse
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import requests
 import feedparser
@@ -46,7 +46,7 @@ def send_telegram_alert(chat_id, text):
     }
     if WEB_APP_URL:
         payload["reply_markup"] = json.dumps({
-            "inline_keyboard": [[{"text": "🚀 Open CareerOS Web App", "url": WEB_APP_URL}]]
+            "inline_keyboard": [[{"text": "🔓 Unlock CareerOS Vault", "url": WEB_APP_URL}]]
         })
     try:
         requests.post(f"https://api.telegram.org/bot{TG_BOT_TOKEN}/sendMessage", json=payload, timeout=15)
@@ -142,16 +142,16 @@ def fetch_remote_feeds(roles):
     return results
 
 
-def evaluate_job_with_gemini(resume, job):
+def evaluate_job_with_gemini(skills, job):
     emails_found = re.findall(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}", job["description"])
     prompt = f"""
-    Match this job against the candidate's resume and classify into ONE category:
+    Match this job against the candidate's skills and classify into ONE category:
     - "A": Direct apply link with no recruiter email and no screening questions.
     - "B": Mentions mandatory screening questions (notice period, expected CTC, years in skill).
     - "C": Contains a recruiter email address asking candidates to email their resume.
     - "D": Social hiring post asking candidates to comment.
 
-    Candidate Skills: {resume.get("skills", [])}
+    Candidate Skills: {skills}
     Job: {job["title"]} at {job["company"]}
     Detected Emails: {emails_found}
     Description: {job["description"][:4000]}
@@ -178,40 +178,23 @@ def evaluate_job_with_gemini(resume, job):
     return data
 
 
-def process_user_workspace(user_path):
-    user_data = load_json(user_path, None)
-    if not user_data:
+def process_encrypted_vault(user_path):
+    vault = load_json(user_path, None)
+    if not vault or not gemini:
         return
 
-    uid = user_data.get("user_id", os.path.basename(user_path))
-    tg_chat_id = user_data.get("telegram_chat_id", "")
-    jobs_map = user_data.setdefault("jobs", {})
-    actions_map = user_data.setdefault("actions", {})
-
-    now = datetime.utcnow()
-    due = []
-    for h, act in actions_map.items():
-        if act.get("status") == "Applied" and act.get("applied_at") and not act.get("followup_notified"):
-            applied_dt = datetime.fromisoformat(act["applied_at"].replace("Z", ""))
-            if now - applied_dt >= timedelta(days=5):
-                act["status"] = "Follow_Up_Due"
-                act["followup_notified"] = True
-                j = jobs_map.get(h, {})
-                due.append(f"• *{j.get('title')}* @ {j.get('company')}")
-    if due and tg_chat_id:
-        send_telegram_alert(tg_chat_id, f"⏰ *5-Day Follow-Up Reminder ({uid})!*
-
-" + "
-".join(due))
-
-    resume = user_data.get("resume")
-    if not resume or not gemini:
-        save_json(user_path, user_data)
+    uid = vault.get("user_id", os.path.basename(user_path))
+    idx = vault.get("match_index", {})
+    skills = idx.get("skills", [])
+    if not skills:
         return
 
-    roles = user_data.get("target_roles") or resume.get("inferred_roles") or ["Developer"]
-    locations = user_data.get("locations") or ["Remote"]
-    blacklist = [b.lower() for b in user_data.get("blacklist", [])]
+    roles = idx.get("target_roles") or ["Developer"]
+    locations = idx.get("locations") or ["Remote"]
+    blacklist = [b.lower() for b in idx.get("blacklist", [])]
+    seen = set(idx.get("seen_hashes", []))
+    pending = vault.setdefault("pending_jobs", {})
+    seen.update(pending.keys())
 
     candidates = fetch_linkedin_public_jobs(roles, locations) + fetch_remote_feeds(roles)
     newly_matched = []
@@ -220,23 +203,24 @@ def process_user_workspace(user_path):
         if len(newly_matched) >= 6:
             break
         h = job["hash"]
-        if h in actions_map:
+        if h in seen:
             continue
         blob = f"{job['title']} {job['description']}".lower()
         if any(bad in blob for bad in blacklist):
             continue
 
-        analysis = evaluate_job_with_gemini(resume, job)
+        analysis = evaluate_job_with_gemini(skills, job)
         if analysis.get("match_score", 0) < 55:
             continue
 
         job.update(analysis)
-        jobs_map[h] = job
-        actions_map[h] = {"status": "Queued", "updated_at": datetime.utcnow().isoformat()}
+        pending[h] = job
+        seen.add(h)
         newly_matched.append(f"• *{job['title']}* @ {job['company']} ({job['match_score']}% | Cat {job['category']})")
 
-    save_json(user_path, user_data)
+    save_json(user_path, vault)
 
+    tg_chat_id = idx.get("telegram_chat_id", "")
     if newly_matched and tg_chat_id:
         send_telegram_alert(
             tg_chat_id,
@@ -247,17 +231,17 @@ def process_user_workspace(user_path):
 ".join(newly_matched)
             + "
 
-Open *CareerOS AI* to Tailor Resume, Prep Interview, or Smart Apply."
+Open *CareerOS Vault* with your PIN to Tailor Resume or Smart Apply."
         )
 
 
 if __name__ == "__main__":
     user_files = glob.glob("data/users/*.json")
-    print(f"Found {len(user_files)} registered user workspaces.")
+    print(f"Scanning {len(user_files)} encrypted user vaults.")
     for path in user_files:
         if os.path.basename(path) == ".gitkeep":
             continue
         try:
-            process_user_workspace(path)
+            process_encrypted_vault(path)
         except Exception as e:
             print(f"Error processing {path}: {e}")
