@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CareerOS Universal | Multi-User AI Job & Outreach Platform</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f3f6f8; color: #0f172a; }
+    .card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; box-shadow: 0 1px 3px rgba(15,23,42,0.04); transition: all 0.2s ease; }
+    .card:hover { box-shadow: 0 8px 24px rgba(15,23,42,0.08); border-color: #cbd5e1; }
+    .nav-active { background: #eff6ff; color: #0a66c2; font-weight: 700; border-right: 3px solid #0a66c2; }
+    .brand-blue { background-color: #0a66c2; }
+    .brand-blue:hover { background-color: #004182; }
+    .naukri-grad { background: linear-gradient(135deg, #275df5 0%, #0a66c2 100%); }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- TOP NAVBAR -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 px-6 py-3 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl naukri-grad text-white flex items-center justify-center font-extrabold text-lg shadow-sm">C</div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="font-extrabold text-lg text-slate-900 tracking-tight">CareerOS <span class="text-[#0a66c2]">Universal</span></h1>
+          <span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">Multi-User SaaS</span>
+        </div>
+        <p class="text-xs text-slate-500">Zero-Noise Discovery • Recruiter Cold Outreach • Interview Copilot</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3 flex-1 max-w-md">
+      <input id="global-search" oninput="renderAll()" type="text" placeholder="Search role, company, or skill..." class="w-full bg-slate-100 border border-slate-200 focus:bg-white focus:border-[#0a66c2] outline-none rounded-full px-4 py-2 text-sm" />
+    </div>
+
+    <div class="flex items-center gap-2">
+      <span id="active-user-pill" class="hidden md:inline-block bg-blue-50 text-[#0a66c2] border border-blue-200 px-3 py-1.5 rounded-full text-xs font-bold">Guest</span>
+      <button onclick="triggerLiveScan()" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-full text-xs font-semibold shadow-sm">⚡ Trigger Live Scan</button>
+      <button onclick="syncUserWorkspace()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-2 rounded-full text-xs font-semibold">🔄 Sync</button>
+    </div>
+  </header>
+
+  <!-- Toast -->
+  <div id="toast" class="hidden fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-2xl text-sm font-medium flex items-center gap-3">
+    <span id="toast-msg">Ready</span>
+    <button onclick="document.getElementById('toast').classList.add('hidden')" class="text-slate-400 hover:text-white">✕</button>
+  </div>
+
+  <!-- MAIN 3-COLUMN WORKSPACE -->
+  <div class="flex-1 max-w-[1440px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 p-6">
+
+    <!-- LEFT SIDEBAR (3 COLS) -->
+    <aside class="lg:col-span-3 space-y-4">
+      <div class="card p-5 space-y-4">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-full bg-blue-100 text-[#0a66c2] font-extrabold text-lg flex items-center justify-center" id="avatar-initials">U</div>
+          <div class="overflow-hidden">
+            <h2 class="font-bold text-slate-900 text-base truncate" id="side-name">Welcome User</h2>
+            <p class="text-xs text-slate-500 truncate" id="side-role">Login / Setup Workspace</p>
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <div class="flex justify-between text-xs font-semibold">
+            <span class="text-slate-600">Profile & AI Strength</span>
+            <span class="text-[#0a66c2]" id="profile-score">25%</span>
+          </div>
+          <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+            <div id="profile-bar" class="brand-blue h-full transition-all duration-500" style="width: 25%"></div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-center">
+          <div>
+            <div class="font-extrabold text-base text-slate-900" id="stat-queued">0</div>
+            <div class="text-[11px] text-slate-500">Matched</div>
+          </div>
+          <div>
+            <div class="font-extrabold text-base text-emerald-600" id="stat-applied">0</div>
+            <div class="text-[11px] text-slate-500">Applied</div>
+          </div>
+          <div>
+            <div class="font-extrabold text-base text-purple-600" id="stat-interviews">0</div>
+            <div class="text-[11px] text-slate-500">Interviews</div>
+          </div>
+        </div>
+      </div>
+
+      <nav class="card overflow-hidden py-2 text-sm font-medium text-slate-700">
+        <button onclick="switchTab('feed')" id="nav-feed" class="nav-btn nav-active w-full text-left px-5 py-3 flex items-center justify-between hover:bg-slate-50">
+          <span>🎯 Smart Job Feed (A–D)</span>
+          <span class="bg-blue-100 text-[#0a66c2] text-xs font-bold px-2 py-0.5 rounded-full" id="badge-feed">0</span>
+        </button>
+        <button onclick="switchTab('outreach')" id="nav-outreach" class="nav-btn w-full text-left px-5 py-3 flex items-center justify-between hover:bg-slate-50">
+          <span>📧 Recruiter Cold Outreach</span>
+          <span class="text-xs text-slate-400">HR Finder</span>
+        </button>
+        <button onclick="switchTab('tracker')" id="nav-tracker" class="nav-btn w-full text-left px-5 py-3 flex items-center justify-between hover:bg-slate-50">
+          <span>📊 Lifecycle & CSV Tracker</span>
+          <span class="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full" id="badge-tracker">0</span>
+        </button>
+        <button onclick="switchTab('copilot')" id="nav-copilot" class="nav-btn w-full text-left px-5 py-3 flex items-center justify-between hover:bg-slate-50">
+          <span>🧠 AI Resume & Career Audit</span>
+          <span class="text-xs text-purple-600 font-semibold">Pro</span>
+        </button>
+        <button onclick="switchTab('settings')" id="nav-settings" class="nav-btn w-full text-left px-5 py-3 flex items-center justify-between hover:bg-slate-50">
+          <span>👤 User Account & API Setup</span>
+          <span class="text-xs text-slate-400">Multi-User</span>
+        </button>
+      </nav>
+    </aside>
+
+    <!-- CENTER WORKSPACE (9 COLS) -->
+    <main class="lg:col-span-9 space-y-6">
+
+      <!-- TAB 1: SMART JOB FEED -->
+      <section id="tab-feed" class="space-y-4">
+        <div class="card p-4 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-wrap gap-2">
+            <button onclick="setCatFilter('ALL')" class="bg-slate-900 text-white px-3.5 py-1.5 rounded-full text-xs font-semibold">All Jobs</button>
+            <button onclick="setCatFilter('A')" class="bg-slate-100 text-slate-700 hover:bg-slate-200 px-3.5 py-1.5 rounded-full text-xs font-semibold">⚡ Cat A: One-Click</button>
+            <button onclick="setCatFilter('B')" class="bg-slate-100 text-slate-700 hover:bg-slate-200 px-3.5 py-1.5 rounded-full text-xs font-semibold">📝 Cat B: Screening Q&A</button>
+            <button onclick="setCatFilter('C')" class="bg-slate-100 text-slate-700 hover:bg-slate-200 px-3.5 py-1.5 rounded-full text-xs font-semibold">✉️ Cat C: Direct HR Email</button>
+            <button onclick="setCatFilter('D')" class="bg-slate-100 text-slate-700 hover:bg-slate-200 px-3.5 py-1.5 rounded-full text-xs font-semibold">💬 Cat D: Hiring Posts</button>
+          </div>
+          <div class="text-xs text-slate-500 font-medium">Auto-Scan: <b>8:00 AM – 8:00 PM</b> • User-Isolated Queue</div>
+        </div>
+
+        <div id="jobs-feed-list" class="space-y-4"></div>
+      </section>
+
+      <!-- TAB 2: RECRUITER COLD OUTREACH -->
+      <section id="tab-outreach" class="hidden space-y-5">
+        <div class="card p-6 space-y-4">
+          <div>
+            <h2 class="text-lg font-extrabold text-slate-900">📧 Hidden Job Market: Direct Recruiter & Hiring Manager Outreach</h2>
+            <p class="text-xs text-slate-500">Find decision-makers at any target company via safe X-Ray links and generate personalized cold emails + LinkedIn notes.</p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <input id="outreach-company" type="text" placeholder="Target Company (e.g., Zoho, Freshworks, Stripe)" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm" />
+            <input id="outreach-role" type="text" placeholder="Target Role (e.g., Python Backend Developer)" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm" />
+            <button onclick="generateOutreachKit()" class="brand-blue text-white font-semibold rounded-xl px-4 py-2.5 text-sm">✨ Generate Outreach Kit</button>
+          </div>
+          <div id="outreach-output" class="hidden space-y-4 pt-3 border-t border-slate-100"></div>
+        </div>
+      </section>
+
+      <!-- TAB 3: TRACKER & ANALYTICS -->
+      <section id="tab-tracker" class="hidden space-y-5">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="card p-5 md:col-span-2 flex flex-col justify-between">
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <h2 class="text-lg font-extrabold text-slate-900">📊 Personal Application Funnel</h2>
+                <p class="text-xs text-slate-500">5-day silent applications automatically flag <b>Follow_Up_Due</b> on your Telegram.</p>
+              </div>
+              <button onclick="exportCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-semibold">📥 Export CSV</button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-sm">
+                <thead class="bg-slate-50 text-slate-500 text-xs uppercase border-y border-slate-200">
+                  <tr>
+                    <th class="py-3 px-4">Company & Role</th>
+                    <th class="py-3 px-4">Flow</th>
+                    <th class="py-3 px-4">Stage</th>
+                    <th class="py-3 px-4">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="tracker-table-body" class="divide-y divide-slate-100"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card p-5 space-y-3">
+            <h3 class="font-bold text-sm text-slate-800">Pipeline Analytics</h3>
+            <canvas id="pipelineChart" height="220"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: AI RESUME LAB & SKILL-GAP AUDIT -->
+      <section id="tab-copilot" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="card p-6 space-y-4">
+          <h2 class="text-lg font-extrabold text-slate-900">📄 Personal Resume & Job Preferences</h2>
+          <p class="text-xs text-slate-500">Upload your PDF resume. Gemini parses your skills and saves them exclusively to your user workspace.</p>
+
+          <div class="border-2 border-dashed border-slate-200 rounded-xl p-5 text-center space-y-2 bg-slate-50">
+            <input type="file" id="resume-upload" accept=".pdf" class="text-xs text-slate-600" />
+            <button onclick="parseAndSaveResume()" class="brand-blue text-white px-5 py-2 rounded-xl text-xs font-semibold block mx-auto mt-2">✨ Parse Resume with Gemini AI</button>
+          </div>
+
+          <div class="space-y-3 pt-2">
+            <div>
+              <label class="text-xs font-bold text-slate-600">Target Roles (Comma Separated)</label>
+              <input id="pref-roles" type="text" placeholder="Python Developer, Full Stack Engineer, Data Analyst" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm mt-1" />
+            </div>
+            <div>
+              <label class="text-xs font-bold text-slate-600">Preferred Locations / Remote</label>
+              <input id="pref-locations" type="text" placeholder="Chennai, Remote, Bengaluru" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm mt-1" />
+            </div>
+            <div>
+              <label class="text-xs font-bold text-rose-600">Exclude Keywords (Auto-Blacklist)</label>
+              <input id="pref-blacklist" type="text" placeholder="e.g., Java, PHP, Sales" class="w-full bg-rose-50/40 border border-rose-200 rounded-xl px-3.5 py-2 text-sm mt-1" />
+            </div>
+            <div>
+              <label class="text-xs font-bold text-blue-600">Your Personal Telegram Chat ID (For Push Alerts)</label>
+              <input id="pref-tg-chat" type="text" placeholder="Get numeric ID from @userinfobot on Telegram" class="w-full bg-blue-50/40 border border-blue-200 rounded-xl px-3.5 py-2 text-sm mt-1" />
+            </div>
+            <button onclick="saveProfilePreferences()" class="bg-slate-900 hover:bg-slate-800 text-white w-full py-2.5 rounded-xl text-xs font-semibold">💾 Save My Profile & Preferences</button>
+          </div>
+        </div>
+
+        <div class="card p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-lg font-extrabold text-slate-900">📈 Weekly AI Skill-Gap & Market Audit</h2>
+            <button onclick="runCareerAudit()" class="bg-purple-600 hover:bg-purple-700 text-white px-3.5 py-2 rounded-xl text-xs font-semibold">🔍 Run AI Audit</button>
+          </div>
+          <div id="audit-box" class="bg-purple-50 border border-purple-100 rounded-xl p-4 text-xs text-purple-950 whitespace-pre-wrap leading-relaxed">
+            Click "Run AI Audit" to analyze your resume skills against live market jobs and discover missing high-paying keywords.
+          </div>
+          <div>
+            <h3 class="text-xs font-bold uppercase text-slate-400 mb-2">My Parsed Resume Profile</h3>
+            <pre id="resume-json-preview" class="bg-slate-900 text-emerald-300 p-4 rounded-xl text-xs overflow-auto max-h-64">No resume uploaded yet.</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 5: MULTI-USER ACCOUNT & REPO CONNECTION -->
+      <section id="tab-settings" class="hidden max-w-2xl card p-6 space-y-4">
+        <div class="border-b border-slate-100 pb-3">
+          <h2 class="text-lg font-extrabold text-slate-900">👤 Multi-User Workspace Login & Setup</h2>
+          <p class="text-xs text-slate-500">Any user can enter their own unique <b>User ID / Handle</b> to maintain a completely isolated resume, job feed, and tracking history.</p>
+        </div>
+
+        <div class="space-y-3">
+          <div class="bg-blue-50/60 border border-blue-200 p-4 rounded-xl space-y-2">
+            <label class="text-xs font-extrabold text-[#0a66c2] uppercase">1. Your Unique User Handle (Creates Your Isolated Workspace)</label>
+            <input id="cfg-userid" type="text" placeholder="e.g., selvaraj_98 or your email prefix" class="w-full bg-white border border-blue-300 rounded-xl px-3.5 py-2 text-sm font-semibold" />
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-slate-700">2. GitHub Repo Owner Username</label>
+            <input id="cfg-user" type="text" placeholder="e.g., selvaraj-dev" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm mt-1" />
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-700">3. Private Repository Name</label>
+            <input id="cfg-repo" type="text" placeholder="e.g., careeros-universal" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm mt-1" />
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-700">4. GitHub Fine-Grained Token (Contents: Read/Write + Actions: Read/Write)</label>
+            <input id="cfg-token" type="password" placeholder="github_pat_..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm mt-1" />
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-700">5. Your Personal Google Gemini API Key (Free Tier)</label>
+            <input id="cfg-gemini" type="password" placeholder="AIzaSy..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm mt-1" />
+          </div>
+          <button onclick="saveSystemConfig()" class="brand-blue text-white w-full py-2.5 rounded-xl text-sm font-bold">🚀 Connect My Personal Workspace</button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- MODAL -->
+  <div id="modal-overlay" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 id="modal-heading" class="font-extrabold text-lg text-slate-900">AI Copilot</h3>
+        <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold">✕</button>
+      </div>
+      <div id="modal-content" class="space-y-4 text-sm text-slate-700"></div>
+    </div>
+  </div>
+
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    let state = {
+      userData: {
+        user_id: "default_user",
+        telegram_chat_id: "",
+        target_roles: [],
+        locations: ["Chennai", "Remote"],
+        blacklist: [],
+        resume: null,
+        saved_answers: {},
+        jobs: {},
+        actions: {}
+      },
+      fileSha: null,
+      catFilter: 'ALL',
+      chart: null
+    };
+
+    function sanitizeId(raw) {
+      return (raw || 'default_user').toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+    }
+
+    function cfg() {
+      return {
+        userId: sanitizeId(localStorage.getItem('cos_userid') || ''),
+        user: localStorage.getItem('cos_user') || '',
+        repo: localStorage.getItem('cos_repo') || '',
+        token: localStorage.getItem('cos_token') || '',
+        gemini: localStorage.getItem('cos_gemini') || ''
+      };
+    }
+
+    function toast(msg) {
+      const el = document.getElementById('toast');
+      document.getElementById('toast-msg').innerText = msg;
+      el.classList.remove('hidden');
+      setTimeout(() => el.classList.add('hidden'), 4000);
+    }
+
+    function switchTab(name) {
+      ['feed', 'outreach', 'tracker', 'copilot', 'settings'].forEach(t => {
+        document.getElementById('tab-' + t).classList.add('hidden');
+        document.getElementById('nav-' + t).classList.remove('nav-active');
+      });
+      document.getElementById('tab-' + name).classList.remove('hidden');
+      document.getElementById('nav-' + name).classList.add('nav-active');
+      if (name === 'tracker') renderChart();
+    }
+
+    function setCatFilter(cat) {
+      state.catFilter = cat;
+      renderAll();
+    }
+
+    function saveSystemConfig() {
+      const uid = sanitizeId(document.getElementById('cfg-userid').value.trim());
+      localStorage.setItem('cos_userid', uid);
+      localStorage.setItem('cos_user', document.getElementById('cfg-user').value.trim());
+      localStorage.setItem('cos_repo', document.getElementById('cfg-repo').value.trim());
+      localStorage.setItem('cos_token', document.getElementById('cfg-token').value.trim());
+      localStorage.setItem('cos_gemini', document.getElementById('cfg-gemini').value.trim());
+      toast(`✅ Workspace "${uid}" connected! Syncing...`);
+      syncUserWorkspace();
+    }
+
+    function getUserFilePath() {
+      return `data/users/${cfg().userId}.json`;
+    }
+
+    async function syncUserWorkspace() {
+      const c = cfg();
+      if (!c.user || !c.repo || !c.token || !localStorage.getItem('cos_userid')) {
+        switchTab('settings');
+        return;
+      }
+      document.getElementById('active-user-pill').innerText = `👤 ${c.userId}`;
+      const path = getUserFilePath();
+      const res = await fetch(`https://api.github.com/repos/${c.user}/${c.repo}/contents/${path}?t=${Date.now()}`, {
+        headers: { Authorization: `Bearer ${c.token}`, Accept: 'application/vnd.github.v3+json' }
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const decoded = decodeURIComponent(escape(atob(data.content.replace(/
+/g, ''))));
+        state.userData = JSON.parse(decoded);
+        state.fileSha = data.sha;
+      } else if (res.status === 404) {
+        state.userData = {
+          user_id: c.userId,
+          telegram_chat_id: "",
+          target_roles: ["Python Developer", "Full Stack Engineer"],
+          locations: ["Chennai", "Remote"],
+          blacklist: [],
+          resume: null,
+          saved_answers: {},
+          jobs: {},
+          actions: {}
+        };
+        state.fileSha = null;
+        await persistUserWorkspace(`register user: ${c.userId}`);
+      }
+
+      document.getElementById('pref-roles').value = (state.userData.target_roles || []).join(', ');
+      document.getElementById('pref-locations').value = (state.userData.locations || []).join(', ');
+      document.getElementById('pref-blacklist').value = (state.userData.blacklist || []).join(', ');
+      document.getElementById('pref-tg-chat').value = state.userData.telegram_chat_id || '';
+
+      if (state.userData.resume) {
+        document.getElementById('resume-json-preview').innerText = JSON.stringify(state.userData.resume, null, 2);
+        document.getElementById('side-name').innerText = state.userData.resume.name || c.userId;
+        document.getElementById('side-role').innerText = (state.userData.target_roles || [])[0] || 'Active Job Seeker';
+        document.getElementById('avatar-initials').innerText = (state.userData.resume.name || c.userId)[0].toUpperCase();
+        document.getElementById('profile-score').innerText = '100%';
+        document.getElementById('profile-bar').style.width = '100%';
+      } else {
+        document.getElementById('side-name').innerText = c.userId;
+      }
+
+      renderAll();
+      toast(`✅ Synced workspace for ${c.userId}`);
+    }
+
+    async function persistUserWorkspace(commitMsg) {
+      const c = cfg();
+      const path = getUserFilePath();
+      const content = btoa(unescape(encodeURIComponent(JSON.stringify(state.userData, null, 2))));
+      const body = { message: commitMsg, content };
+      if (state.fileSha) body.sha = state.fileSha;
+
+      const res = await fetch(`https://api.github.com/repos/${c.user}/${c.repo}/contents/${path}`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${c.token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const out = await res.json();
+      if (out.content?.sha) state.fileSha = out.content.sha;
+    }
+
+    async function triggerLiveScan() {
+      const c = cfg();
+      if (!c.token) return switchTab('settings');
+      toast('⚡ Triggering Multi-User Live Job Scan...');
+      const res = await fetch(`https://api.github.com/repos/${c.user}/${c.repo}/actions/workflows/discover_jobs.yml/dispatches`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${c.token}`, Accept: 'application/vnd.github.v3+json' },
+        body: JSON.stringify({ ref: 'main' })
+      });
+      if (res.status === 204) {
+        toast('🚀 Scan running! Click 🔄 Sync in ~45 seconds.');
+      } else {
+        toast('⚠️ Check that your GitHub token has Actions: Read & Write permission.');
+      }
+    }
+
+    async function geminiAI(prompt, jsonMode = false) {
+      const c = cfg();
+      const payload = { contents: [{ parts: [{ text: prompt }] }] };
+      if (jsonMode) payload.generationConfig = { responseMimeType: "application/json" };
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${c.gemini}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      return jsonMode ? JSON.parse(raw) : raw;
+    }
+
+    async function parseAndSaveResume() {
+      const inp = document.getElementById('resume-upload');
+      if (!inp.files.length) return toast('⚠️ Select a PDF resume first');
+      toast('⏳ Parsing PDF with Gemini AI...');
+      const buf = await inp.files[0].arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+      let text = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        text += content.items.map(it => it.str).join(' ') + '
+';
+      }
+      const parsed = await geminiAI(`Extract structured resume JSON with keys: name, email, phone, summary, skills (array), experience (array of {role, company, duration}), inferred_roles (array of 3 roles). Resume: ${text.slice(0, 12000)}`, true);
+      state.userData.resume = parsed;
+      if (!state.userData.target_roles?.length) state.userData.target_roles = parsed.inferred_roles || [];
+      await persistUserWorkspace(`user ${cfg().userId}: update resume`);
+      syncUserWorkspace();
+    }
+
+    async function saveProfilePreferences() {
+      state.userData.target_roles = document.getElementById('pref-roles').value.split(',').map(s => s.trim()).filter(Boolean);
+      state.userData.locations = document.getElementById('pref-locations').value.split(',').map(s => s.trim()).filter(Boolean);
+      state.userData.blacklist = document.getElementById('pref-blacklist').value.split(',').map(s => s.trim()).filter(Boolean);
+      state.userData.telegram_chat_id = document.getElementById('pref-tg-chat').value.trim();
+      await persistUserWorkspace(`user ${cfg().userId}: update preferences`);
+      toast('✅ Personal preferences & Telegram Chat ID saved!');
+    }
+
+    function renderAll() {
+      const q = document.getElementById('global-search').value.toLowerCase();
+      const jobs = state.userData.jobs || {};
+      const actions = state.userData.actions || {};
+
+      let queued = 0, applied = 0, interviews = 0;
+      Object.keys(actions).forEach(h => {
+        const st = actions[h].status;
+        if (st === 'Queued') queued++;
+        if (['Applied', 'Follow_Up_Due'].includes(st)) applied++;
+        if (st === 'Interview') { applied++; interviews++; }
+      });
+
+      document.getElementById('stat-queued').innerText = queued;
+      document.getElementById('stat-applied').innerText = applied;
+      document.getElementById('stat-interviews').innerText = interviews;
+      document.getElementById('badge-feed').innerText = queued;
+      document.getElementById('badge-tracker').innerText = applied;
+
+      const listEl = document.getElementById('jobs-feed-list');
+      const visibleHashes = Object.keys(jobs).filter(h => {
+        const st = actions[h]?.status || 'Queued';
+        if (st !== 'Queued') return false;
+        const j = jobs[h];
+        if (state.catFilter !== 'ALL' && j.category !== state.catFilter) return false;
+        if (q && !`${j.title} ${j.company} ${(j.matched_skills || []).join(' ')}`.toLowerCase().includes(q)) return false;
+        return true;
+      });
+
+      if (!visibleHashes.length) {
+        listEl.innerHTML = `<div class="card p-10 text-center text-slate-500">No queued jobs in your feed right now. Upload your resume in <b>AI Resume & Career Audit</b> and click <b>⚡ Trigger Live Scan</b>.</div>`;
+      } else {
+        const catMeta = {
+          A: { label: '⚡ One-Click Apply', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+          B: { label: '📝 Few Mandatory Questions', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+          C: { label: '✉️ Recruiter Email + Resume Tailor', cls: 'bg-blue-50 text-[#0a66c2] border-blue-200' },
+          D: { label: '💬 Comment Hiring Post', cls: 'bg-purple-50 text-purple-700 border-purple-200' }
+        };
+
+        listEl.innerHTML = visibleHashes.map(h => {
+          const j = jobs[h];
+          const cm = catMeta[j.category] || catMeta.A;
+          const skillsHtml = (j.matched_skills || []).map(s => `<span class="bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-md text-xs font-medium">${s}</span>`).join(' ');
+          return `
+            <div class="card p-5 space-y-3">
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <h3 class="font-bold text-base text-slate-900">${j.title}</h3>
+                    <span class="border ${cm.cls} px-2.5 py-0.5 rounded-full text-[11px] font-bold">${cm.label}</span>
+                  </div>
+                  <p class="text-xs text-slate-500 mt-1">🏢 <b>${j.company}</b> • 📍 ${j.location} • 🌐 ${j.source}</p>
+                </div>
+                <span class="bg-emerald-50 text-emerald-700 font-extrabold px-3 py-1 rounded-xl text-xs border border-emerald-200">${j.match_score}% Match</span>
+              </div>
+              <p class="text-xs text-slate-600 leading-relaxed">${j.jd_summary || ''}</p>
+              <div class="flex flex-wrap gap-1.5">${skillsHtml}</div>
+              <div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-100">
+                <div class="flex flex-wrap gap-2">
+                  <button onclick="runCategoryFlow('${h}')" class="brand-blue text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm">🚀 Smart Apply</button>
+                  <button onclick="openInterviewCopilot('${h}')" class="bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 px-3.5 py-2 rounded-xl text-xs font-semibold">🧠 Interview Prep & Referral</button>
+                  <a href="${j.apply_url}" target="_blank" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-2 rounded-xl text-xs font-semibold">🔗 View Post</a>
+                </div>
+                <button onclick="updateStatus('${h}', 'Skipped')" class="text-slate-400 hover:text-rose-600 text-xs font-semibold px-2 py-1">⏭️ Skip Forever</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      const tbody = document.getElementById('tracker-table-body');
+      const trackedHashes = Object.keys(actions).filter(h => ['Applied', 'Follow_Up_Due', 'Interview', 'Rejected'].includes(actions[h].status));
+      tbody.innerHTML = trackedHashes.map(h => {
+        const j = jobs[h] || { title: 'Role', company: 'Company', category: 'A' };
+        const st = actions[h].status;
+        const badge = st === 'Interview' ? 'bg-purple-100 text-purple-700' : st === 'Follow_Up_Due' ? 'bg-amber-100 text-amber-800' : st === 'Rejected' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700';
+        return `
+          <tr>
+            <td class="py-3 px-4"><div class="font-bold text-slate-900">${j.title}</div><div class="text-xs text-slate-500">${j.company}</div></td>
+            <td class="py-3 px-4 text-xs font-semibold">Cat ${j.category}</td>
+            <td class="py-3 px-4"><span class="${badge} px-2.5 py-1 rounded-full text-xs font-bold">${st}</span></td>
+            <td class="py-3 px-4 space-x-1">
+              <button onclick="updateStatus('${h}', 'Interview')" class="bg-purple-50 hover:bg-purple-100 text-purple-700 px-2.5 py-1 rounded-lg text-xs font-semibold">Interview</button>
+              <button onclick="updateStatus('${h}', 'Rejected')" class="bg-rose-50 hover:bg-rose-100 text-rose-700 px-2.5 py-1 rounded-lg text-xs font-semibold">Rejected</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function updateStatus(h, status, extra = {}) {
+      state.userData.actions[h] = { ...(state.userData.actions[h] || {}), status, ...extra, updated_at: new Date().toISOString() };
+      renderAll();
+      await persistUserWorkspace(`user ${cfg().userId}: ${h} -> ${status}`);
+      toast(`✅ Marked as ${status}`);
+    }
+
+    async function runCategoryFlow(h) {
+      const j = state.userData.jobs[h];
+      const resume = state.userData.resume;
+      if (!resume) return toast('⚠️ Upload your PDF resume first!');
+
+      if (j.category === 'A') {
+        window.open(j.apply_url, '_blank');
+        await updateStatus(h, 'Applied', { applied_at: new Date().toISOString() });
+      } else if (j.category === 'B') {
+        const qs = j.mandatory_questions?.length ? j.mandatory_questions : ['Current Notice Period?', 'Expected CTC?'];
+        openModal(`📝 Screening Questions — ${j.company}`, `
+          <div class="space-y-3">
+            ${qs.map((q, idx) => `
+              <div>
+                <label class="text-xs font-bold text-slate-700">${q}</label>
+                <input id="q-ans-${idx}" value="${state.userData.saved_answers?.[q] || ''}" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm mt-1" />
+              </div>
+            `).join('')}
+            <button onclick="completeCatB('${h}')" class="brand-blue text-white w-full py-2.5 rounded-xl font-bold">Save Answers, Open Link & Log Applied</button>
+          </div>
+        `);
+      } else if (j.category === 'C') {
+        openModal(`✉️ AI Resume Tailoring & Email — ${j.company}`, `<p class="text-slate-500">⏳ Tailoring your resume bullets & cold email...</p>`);
+        const tailored = await geminiAI(`Tailor resume for ${j.title} at ${j.company}. Return JSON: {"tailored_summary": "...", "tailored_bullets": ["...", "...", "..."], "email_subject": "...", "email_body": "..."}. Candidate: ${JSON.stringify(resume)}. JD: ${j.description.slice(0, 4000)}`, true);
+        const hrEmail = j.recruiter_email || 'careers@company.com';
+        const mailto = `mailto:${encodeURIComponent(hrEmail)}?subject=${encodeURIComponent(tailored.email_subject)}&body=${encodeURIComponent(tailored.email_body)}`;
+        window._tailoredPack = { resume, tailored, company: j.company };
+
+        openModal(`✉️ Tailored PDF & Email Ready — ${j.company}`, `
+          <div class="space-y-3">
+            <div class="bg-blue-50 border border-blue-100 p-3.5 rounded-xl text-xs space-y-1">
+              <div class="font-bold text-[#0a66c2]">To: ${hrEmail}</div>
+              <div class="font-semibold text-slate-800">Subject: ${tailored.email_subject}</div>
+            </div>
+            <div class="bg-slate-50 p-3.5 rounded-xl text-xs space-y-1">
+              <div class="font-bold text-slate-700">Tailored Summary:</div>
+              <p class="text-slate-600">${tailored.tailored_summary}</p>
+            </div>
+            <textarea rows="5" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs">${tailored.email_body}</textarea>
+            <div class="flex flex-wrap gap-2">
+              <button onclick="generateTailoredPDF()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold">1️⃣ Download Tailored PDF</button>
+              <a href="${mailto}" target="_blank" onclick="updateStatus('${h}', 'Applied', {applied_at: new Date().toISOString()})" class="brand-blue text-white px-4 py-2.5 rounded-xl text-xs font-bold">2️⃣ Open Gmail & Log Applied</a>
+            </div>
+          </div>
+        `);
+      } else if (j.category === 'D') {
+        openModal(`💬 Generating Comment — ${j.company}`, `<p class="text-slate-500">⏳ Drafting comment...</p>`);
+        const comment = await geminiAI(`Write a sharp 2-sentence comment for a LinkedIn hiring post for ${j.title} highlighting skills: ${(resume.skills || []).slice(0, 6).join(', ')}. No hashtags. Post: ${j.description.slice(0, 1500)}`);
+        openModal(`💬 Ready to Post Comment — ${j.company}`, `
+          <div class="space-y-3">
+            <textarea id="social-comment-box" rows="3" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm">${comment}</textarea>
+            <div class="flex gap-2">
+              <button onclick="navigator.clipboard.writeText(document.getElementById('social-comment-box').value); toast('📋 Copied!')" class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-4 py-2 rounded-xl text-xs font-bold">📋 Copy Comment</button>
+              <a href="${j.apply_url}" target="_blank" onclick="updateStatus('${h}', 'Applied', {applied_at: new Date().toISOString()})" class="brand-blue text-white px-4 py-2 rounded-xl text-xs font-bold">🔗 Open Post & Mark Applied</a>
+            </div>
+          </div>
+        `);
+      }
+    }
+
+    async function completeCatB(h) {
+      const j = state.userData.jobs[h];
+      const qs = j.mandatory_questions?.length ? j.mandatory_questions : ['Current Notice Period?', 'Expected CTC?'];
+      const ans = {};
+      qs.forEach((q, idx) => {
+        const v = document.getElementById(`q-ans-${idx}`).value;
+        ans[q] = v;
+        state.userData.saved_answers[q] = v;
+      });
+      window.open(j.apply_url, '_blank');
+      closeModal();
+      await updateStatus(h, 'Applied', { applied_at: new Date().toISOString(), answers: ans });
+    }
+
+    function generateTailoredPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const { resume, tailored, company } = window._tailoredPack;
+      doc.setFontSize(17);
+      doc.text(resume.name || 'Candidate', 15, 20);
+      doc.setFontSize(10);
+      doc.text(`${resume.email || ''} | ${resume.phone || ''}`, 15, 27);
+      doc.setFontSize(12);
+      doc.text('PROFESSIONAL SUMMARY', 15, 38);
+      doc.setFontSize(10);
+      const sLines = doc.splitTextToSize(tailored.tailored_summary || '', 180);
+      doc.text(sLines, 15, 44);
+      let y = 44 + sLines.length * 5 + 8;
+      doc.setFontSize(12);
+      doc.text('ROLE-ALIGNED HIGHLIGHTS', 15, y);
+      y += 6;
+      doc.setFontSize(10);
+      (tailored.tailored_bullets || []).forEach(b => {
+        const lines = doc.splitTextToSize('• ' + b, 180);
+        doc.text(lines, 15, y);
+        y += lines.length * 5 + 2;
+      });
+      doc.save(`${(resume.name || 'Resume').replace(/\s+/g, '_')}_${company}_Tailored.pdf`);
+    }
+
+    async function generateOutreachKit() {
+      const company = document.getElementById('outreach-company').value.trim();
+      const role = document.getElementById('outreach-role').value.trim();
+      if (!company || !role) return toast('Enter both company and target role');
+
+      const out = document.getElementById('outreach-output');
+      out.classList.remove('hidden');
+      out.innerHTML = `<p class="text-xs text-slate-500">⏳ Generating LinkedIn X-Ray People Finder & Outreach Copy...</p>`;
+
+      const xrayManagers = `https://www.google.com/search?q=${encodeURIComponent(`site:linkedin.com/in "${company}" ("Engineering Manager" OR "Tech Lead" OR "VP Engineering" OR "Founder")`)}`;
+      const xrayHR = `https://www.google.com/search?q=${encodeURIComponent(`site:linkedin.com/in "${company}" ("Technical Recruiter" OR "Talent Acquisition" OR "HR")`)}`;
+      const skills = (state.userData.resume?.skills || ['Software Engineering']).slice(0, 6).join(', ');
+
+      const copy = await geminiAI(`Create a direct outreach kit for ${role} at ${company} for a candidate skilled in ${skills}. Return JSON: {"linkedin_note": "under 280 chars connection note", "cold_email_subject": "...", "cold_email_body": "under 130 words punchy email"}`, true);
+
+      out.innerHTML = `
+        <div class="flex flex-wrap gap-3">
+          <a href="${xrayManagers}" target="_blank" class="bg-blue-50 text-[#0a66c2] border border-blue-200 px-4 py-2 rounded-xl text-xs font-bold">🔍 Find ${company} Hiring Managers</a>
+          <a href="${xrayHR}" target="_blank" class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-4 py-2 rounded-xl text-xs font-bold">🔍 Find ${company} Recruiters</a>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-slate-50 p-4 rounded-xl space-y-2">
+            <div class="text-xs font-bold text-slate-800">LinkedIn Connection Note</div>
+            <p class="text-xs text-slate-600">${copy.linkedin_note}</p>
+            <button onclick="navigator.clipboard.writeText(\`${copy.linkedin_note.replace(/`/g, '')}\`); toast('📋 Copied!')" class="text-xs text-[#0a66c2] font-bold">📋 Copy Note</button>
+          </div>
+          <div class="bg-slate-50 p-4 rounded-xl space-y-2">
+            <div class="text-xs font-bold text-slate-800">Cold Email Pitch (${copy.cold_email_subject})</div>
+            <p class="text-xs text-slate-600 whitespace-pre-wrap">${copy.cold_email_body}</p>
+            <button onclick="navigator.clipboard.writeText(\`${copy.cold_email_body.replace(/`/g, '')}\`); toast('📋 Copied!')" class="text-xs text-[#0a66c2] font-bold">📋 Copy Email</button>
+          </div>
+        </div>
+      `;
+    }
+
+    async function openInterviewCopilot(h) {
+      const j = state.userData.jobs[h];
+      const xrayUrl = `https://www.google.com/search?q=${encodeURIComponent(`site:linkedin.com/in "${j.company}" ("Engineering Manager" OR "Tech Lead" OR "Recruiter")`)}`;
+      openModal(`🧠 AI Interview Cheat-Sheet & Referral Kit — ${j.company}`, `<p class="text-slate-500">⏳ Generating Top 5 Interview Questions & Referral DM...</p>`);
+      const prep = await geminiAI(`Generate an interview prep cheat-sheet for ${j.title} at ${j.company}. Include: 1) Top 5 likely questions & winning answer tips based on skills ${(state.userData.resume?.skills || []).join(', ')}. 2) A 3-sentence LinkedIn referral DM. JD: ${j.description.slice(0, 3000)}`);
+      openModal(`🧠 Interview Copilot — ${j.company}`, `
+        <div class="space-y-4">
+          <a href="${xrayUrl}" target="_blank" class="inline-block bg-blue-50 text-[#0a66c2] border border-blue-200 px-4 py-2 rounded-xl text-xs font-bold">🔍 Find ${j.company} Referrers on LinkedIn</a>
+          <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl whitespace-pre-wrap text-xs leading-relaxed text-slate-800">${prep}</div>
+        </div>
+      `);
+    }
+
+    async function runCareerAudit() {
+      if (!state.userData.resume) return toast('Upload your resume first');
+      const box = document.getElementById('audit-box');
+      box.innerText = '⏳ Auditing your resume against market demand...';
+      const titles = Object.values(state.userData.jobs || {}).slice(0, 25).map(j => j.title).join(', ');
+      const report = await geminiAI(`Audit candidate skills (${(state.userData.resume.skills || []).join(', ')}) against target market jobs (${titles}). Provide: 1) Top 3 missing high-ROI keywords. 2) 2 bullet improvements for higher ATS score.`);
+      box.innerText = report;
+    }
+
+    function renderChart() {
+      const actions = Object.values(state.userData.actions || {});
+      const counts = { Queued: 0, Applied: 0, Interview: 0, Skipped: 0 };
+      actions.forEach(a => {
+        if (a.status === 'Queued') counts.Queued++;
+        else if (['Applied', 'Follow_Up_Due'].includes(a.status)) counts.Applied++;
+        else if (a.status === 'Interview') counts.Interview++;
+        else if (a.status === 'Skipped') counts.Skipped++;
+      });
+      const ctx = document.getElementById('pipelineChart').getContext('2d');
+      if (state.chart) state.chart.destroy();
+      state.chart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Matched Queue', 'Applied', 'Interviews', 'Skipped'],
+          datasets: [{ data: [counts.Queued, counts.Applied, counts.Interview, counts.Skipped], backgroundColor: ['#0a66c2', '#10b981', '#8b5cf6', '#cbd5e1'] }]
+        },
+        options: { plugins: { legend: { position: 'bottom' } } }
+      });
+    }
+
+    function exportCSV() {
+      const jobs = state.userData.jobs || {};
+      const actions = state.userData.actions || {};
+      const rows = [['Role', 'Company', 'Source', 'Category', 'Match %', 'Status', 'Updated At']];
+      Object.keys(actions).forEach(h => {
+        const j = jobs[h] || {};
+        rows.push([j.title, j.company, j.source, j.category, j.match_score, actions[h].status, actions[h].updated_at]);
+      });
+      const csv = rows.map(r => r.map(v => `"${(v ?? '').toString().replace(/"/g, '""')}"`).join(',')).join('
+');
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+      a.download = `CareerOS_${cfg().userId}_Applications.csv`;
+      a.click();
+    }
+
+    function openModal(heading, html) {
+      document.getElementById('modal-heading').innerText = heading;
+      document.getElementById('modal-content').innerHTML = html;
+      document.getElementById('modal-overlay').classList.remove('hidden');
+    }
+    function closeModal() { document.getElementById('modal-overlay').classList.add('hidden'); }
+
+    window.onload = () => {
+      const c = cfg();
+      document.getElementById('cfg-userid').value = localStorage.getItem('cos_userid') || '';
+      document.getElementById('cfg-user').value = c.user;
+      document.getElementById('cfg-repo').value = c.repo;
+      document.getElementById('cfg-token').value = c.token;
+      document.getElementById('cfg-gemini').value = c.gemini;
+      syncUserWorkspace();
+    };
+  </script>
+</body>
+</html>

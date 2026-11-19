@@ -1,0 +1,38 @@
+name: CareerOS Multi-User Job Discovery & Telegram Push
+
+on:
+  schedule:
+    # Runs every 2 hours between 02:30 UTC (8:00 AM IST) and 14:30 UTC (8:00 PM IST)
+    - cron: '30 2,4,6,8,10,12,14 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  multi-user-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - run: pip install -r requirements.txt
+
+      - name: Run Multi-User Job Discovery & Telegram Notifications
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          WEB_APP_URL: ${{ secrets.WEB_APP_URL }}
+        run: python scraper_worker.py
+
+      - name: Save All User Workspaces to GitHub
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add data/users/
+          git diff --quiet && git diff --staged --quiet || git commit -m "chore: update multi-user job queues & followups [skip ci]"
+          git push
