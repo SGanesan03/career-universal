@@ -361,8 +361,7 @@
 
       if (res.ok) {
         const data = await res.json();
-        const decoded = decodeURIComponent(escape(atob(data.content.replace(/
-/g, ''))));
+        const decoded = decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))));
         state.userData = JSON.parse(decoded);
         state.fileSha = data.sha;
       } else if (res.status === 404) {
@@ -457,8 +456,7 @@
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const content = await page.getTextContent();
-        text += content.items.map(it => it.str).join(' ') + '
-';
+        text += content.items.map(it => it.str).join(' ') + '';
       }
       const parsed = await geminiAI(`Extract structured resume JSON with keys: name, email, phone, summary, skills (array), experience (array of {role, company, duration}), inferred_roles (array of 3 roles). Resume: ${text.slice(0, 12000)}`, true);
       state.userData.resume = parsed;
@@ -759,8 +757,7 @@
         const j = jobs[h] || {};
         rows.push([j.title, j.company, j.source, j.category, j.match_score, actions[h].status, actions[h].updated_at]);
       });
-      const csv = rows.map(r => r.map(v => `"${(v ?? '').toString().replace(/"/g, '""')}"`).join(',')).join('
-');
+      const csv = rows.map(r => r.map(v => `"${(v ?? '').toString().replace(/"/g, '""')}"`).join(',')).join('');
       const a = document.createElement('a');
       a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
       a.download = `CareerOS_${cfg().userId}_Applications.csv`;
