@@ -1,33 +1,23 @@
-# 🚀 CareerOS Zero-Config — End-User Ready AI Job & Outreach SaaS
+# 🚀 CareerOS Pure-GitHub SaaS (No script.google.com Needed!)
 
-End-users **never** need a GitHub account, GitHub token, or API key! They simply open your website link, enter their Name/Email, upload their PDF resume, and start applying. Meanwhile, all user resumes stay 100% encrypted & isolated inside your **Private GitHub Data Repo**.
+100% hosted on **GitHub Pages** + **GitHub Actions** + **Private GitHub Data Repo**. No external script platforms required!
 
-## One-Time Admin Setup (5 Minutes in Chrome)
+## Setup Guide (3 Simple Steps)
 
-### Step 1: Create 2 GitHub Repositories
-1. **Public App Repo (`careeros-app`)**: Host the frontend (`index.html`, `scraper_worker.py`, `requirements.txt`, `.github/workflows/discover_jobs.yml`). Enable **Settings -> Pages -> Branch: `main` (`/root`) -> Save** to get your public Website URL.
-2. **Private Data Repo (`careeros-private-data`)**: Create a **Private** repository with a single empty file `data/users/.gitkeep`. All users' resumes and job histories are stored safely here!
+### Step 1: Create 2 Repos on GitHub
+1. **Public App Repo (`careeros-app`)**: Upload `index.html`, `scraper_worker.py`, `requirements.txt`, and `.github/workflows/discover_jobs.yml`. Enable **Settings -> Pages -> Branch: `main` (`/root`) -> Save**.
+2. **Private Data Repo (`careeros-private-data`)**: Create a **Private** repo with `data/users/.gitkeep`. All users' resumes and job histories stay private here.
 
-### Step 2: Deploy the Free Google Apps Script Bridge
-1. Open [script.google.com](https://script.google.com) -> **New project**.
-2. Paste the entire code from `Code.gs` into the editor and save.
-3. Click **Project Settings (Gear icon left sidebar) -> Script Properties -> Add script property** and add:
-   - `GEMINI_API_KEY` = Your `AIzaSy...` key from [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
-   - `GH_OWNER` = Your GitHub username (e.g., `sganesan03`)
-   - `GH_REPO` = `careeros-private-data`
-   - `GH_TOKEN` = Fine-grained GitHub token with **Contents (Read/Write)** on `careeros-private-data` and **Actions (Read/Write)** on `careeros-app`
-4. Click **Deploy -> New deployment -> Web app**:
-   - Execute as: **Me**
-   - Who has access: **Anyone**
-   - Click **Deploy** and copy the **Web app URL** (`https://script.google.com/macros/s/.../exec`).
-
-### Step 3: Paste Bridge URL into `index.html`
-1. Edit `index.html` in `careeros-app` and replace `PASTE_YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE` with your Apps Script Web App URL.
-
-### Step 4: Add Secrets to `careeros-app` (For 8 AM – 8 PM Auto-Scan)
+### Step 2: Add Secrets to `careeros-app`
 Go to `careeros-app` **Settings -> Secrets and variables -> Actions** and add:
-- `GEMINI_API_KEY` = Your `AIzaSy...` key
+- `GEMINI_API_KEY` = Your `AIzaSy...` key from [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
 - `TELEGRAM_BOT_TOKEN` = Token from `@BotFather`
 - `WEB_APP_URL` = Your GitHub Pages URL
 - `DATA_REPO_FULL_NAME` = `sganesan03/careeros-private-data`
-- `GH_DATA_TOKEN` = Same Fine-Grained GitHub token
+- `GH_DATA_TOKEN` = Fine-grained GitHub token (**Contents: Read/Write** on `careeros-private-data` + **Actions: Read/Write** on `careeros-app`)
+
+### Step 3: Generate Your Zero-Config Magic Link
+1. Open your GitHub Pages URL in Chrome.
+2. At the bottom of the Login box, click **⚙️ Admin One-Time Link Generator (Owner Only)**.
+3. Enter your details once and click **🔗 Generate Zero-Config End-User Link**.
+4. Share that Magic Link with anyone—when they open it, they simply enter their **Name / Email** and upload their PDF resume with **0 configuration**!

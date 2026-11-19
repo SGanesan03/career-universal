@@ -21,12 +21,7 @@
 </head>
 <body class="min-h-screen flex flex-col">
 
-  <!-- ADMIN ONE-TIME CONFIG: Paste your Google Apps Script Web App URL below -->
-  <script>
-    const BACKEND_BRIDGE_URL = "PASTE_YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE";
-  </script>
-
-  <!-- END-USER ONBOARDING / LOGIN MODAL (ZERO TECHNICAL SETUP FOR USERS) -->
+  <!-- END-USER LOGIN MODAL (0 CONFIGURATION NEEDED BY END-USERS!) -->
   <div id="login-screen" class="fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-md w-full p-8 shadow-2xl space-y-5">
       <div class="flex items-center gap-3">
@@ -38,7 +33,7 @@
       </div>
 
       <p class="text-sm text-slate-600 leading-relaxed">
-        Enter your name or email ID to open your personal job workspace. No API keys or technical setup required!
+        Enter your Name or Email ID to open your personal job workspace. No technical setup required!
       </p>
 
       <div class="space-y-3">
@@ -50,6 +45,55 @@
           🚀 Enter My Job Workspace
         </button>
       </div>
+
+      <div class="pt-3 border-t border-slate-100 text-center">
+        <button onclick="openAdminSetup()" class="text-[11px] text-slate-400 hover:text-[#0a66c2] font-semibold">
+          ⚙️ Admin One-Time Link Generator (Owner Only)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN ONE-TIME LINK GENERATOR MODAL (NO script.google.com REQUIRED!) -->
+  <div id="admin-screen" class="hidden fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+        <h3 class="font-extrabold text-lg text-slate-900">⚙️ Admin One-Time Shareable Link Generator</h3>
+        <button onclick="document.getElementById('admin-screen').classList.add('hidden')" class="text-slate-400 hover:text-slate-700 font-bold">✕</button>
+      </div>
+      <p class="text-xs text-slate-500">
+        Enter your GitHub & Gemini credentials once to generate a <b>Zero-Config Shareable URL</b>. Anyone who opens that URL will NEVER see any setup fields!
+      </p>
+      <div class="space-y-2.5 text-xs">
+        <div>
+          <label class="font-bold text-slate-700">GitHub Username</label>
+          <input id="adm-owner" type="text" placeholder="sganesan03" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 mt-1" />
+        </div>
+        <div>
+          <label class="font-bold text-slate-700">App Repo Name (Public)</label>
+          <input id="adm-app-repo" type="text" placeholder="careeros-app" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 mt-1" />
+        </div>
+        <div>
+          <label class="font-bold text-slate-700">Private Data Repo Name (Stores User Resumes Safely)</label>
+          <input id="adm-data-repo" type="text" placeholder="careeros-private-data" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 mt-1" />
+        </div>
+        <div>
+          <label class="font-bold text-slate-700">GitHub Fine-Grained Token (Contents R/W on Data Repo + Actions R/W on App Repo)</label>
+          <input id="adm-token" type="password" placeholder="github_pat_..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 mt-1" />
+        </div>
+        <div>
+          <label class="font-bold text-slate-700">Google Gemini API Key (AIzaSy...)</label>
+          <input id="adm-gemini" type="password" placeholder="AIzaSy..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 mt-1" />
+        </div>
+        <button onclick="generateZeroConfigLink()" class="brand-blue text-white w-full py-2.5 rounded-xl font-bold text-sm mt-2">
+          🔗 Generate Zero-Config End-User Link
+        </button>
+      </div>
+      <div id="generated-link-box" class="hidden bg-emerald-50 border border-emerald-200 p-3.5 rounded-xl space-y-2">
+        <div class="text-xs font-bold text-emerald-800">✅ Share This Link With Any User (0 Setup Needed):</div>
+        <textarea id="generated-url-text" rows="3" readonly class="w-full bg-white border border-emerald-300 rounded-lg p-2 text-[11px] font-mono"></textarea>
+        <button onclick="navigator.clipboard.writeText(document.getElementById('generated-url-text').value); toast('📋 Magic Link Copied!')" class="bg-emerald-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold">📋 Copy Magic Link</button>
+      </div>
     </div>
   </div>
 
@@ -60,7 +104,7 @@
       <div>
         <div class="flex items-center gap-2">
           <h1 class="font-extrabold text-lg text-slate-900 tracking-tight">CareerOS <span class="text-[#0a66c2]">AI</span></h1>
-          <span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">Zero-Config SaaS</span>
+          <span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">Zero-Config</span>
         </div>
         <p class="text-xs text-slate-500">Smart Job Feed • Direct HR Outreach • Interview Copilot</p>
       </div>
@@ -274,8 +318,59 @@
   <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
+    // Bootstrap embedded config from URL hash (#cfg=...) if shared via Magic Link
+    (function bootstrapConfigFromLink() {
+      if (window.location.hash.startsWith('#cfg=')) {
+        try {
+          const rawB64 = decodeURIComponent(window.location.hash.slice(5));
+          const decoded = JSON.parse(atob(rawB64));
+          localStorage.setItem('cos_sys_cfg', JSON.stringify(decoded));
+          history.replaceState(null, '', window.location.pathname + window.location.search);
+        } catch (e) {}
+      }
+    })();
+
+    function getSysCfg() {
+      try {
+        return JSON.parse(localStorage.getItem('cos_sys_cfg') || 'null');
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function openAdminSetup() {
+      const c = getSysCfg() || {};
+      document.getElementById('adm-owner').value = c.owner || '';
+      document.getElementById('adm-app-repo').value = c.appRepo || '';
+      document.getElementById('adm-data-repo').value = c.dataRepo || '';
+      document.getElementById('adm-token').value = c.token || '';
+      document.getElementById('adm-gemini').value = c.gemini || '';
+      document.getElementById('admin-screen').classList.remove('hidden');
+    }
+
+    function generateZeroConfigLink() {
+      const cfgObj = {
+        owner: document.getElementById('adm-owner').value.trim(),
+        appRepo: document.getElementById('adm-app-repo').value.trim(),
+        dataRepo: document.getElementById('adm-data-repo').value.trim(),
+        token: document.getElementById('adm-token').value.trim(),
+        gemini: document.getElementById('adm-gemini').value.trim()
+      };
+      if (!cfgObj.owner || !cfgObj.dataRepo || !cfgObj.token || !cfgObj.gemini) {
+        return toast('⚠️ Fill all fields to generate the link');
+      }
+      localStorage.setItem('cos_sys_cfg', JSON.stringify(cfgObj));
+      const encoded = encodeURIComponent(btoa(JSON.stringify(cfgObj)));
+      const baseUrl = window.location.origin + window.location.pathname;
+      const magicUrl = `${baseUrl}#cfg=${encoded}`;
+      document.getElementById('generated-url-text').value = magicUrl;
+      document.getElementById('generated-link-box').classList.remove('hidden');
+      toast('✅ Zero-Config Magic Link Generated!');
+    }
+
     let state = {
       userId: localStorage.getItem('cos_zero_uid') || '',
+      fileSha: null,
       userData: {
         user_id: "",
         telegram_chat_id: "",
@@ -313,29 +408,21 @@
       renderAll();
     }
 
-    async function callBridge(payload) {
-      if (!BACKEND_BRIDGE_URL || BACKEND_BRIDGE_URL.includes("PASTE_YOUR")) {
-        toast("⚠️ Admin has not pasted the Google Apps Script URL in index.html yet.");
-        throw new Error("Missing BACKEND_BRIDGE_URL");
-      }
-      const res = await fetch(BACKEND_BRIDGE_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload)
-      });
-      return await res.json();
-    }
-
     async function loginEndUser() {
+      const sys = getSysCfg();
+      if (!sys) {
+        toast('⚠️ Owner must click "Admin One-Time Link Generator" first.');
+        return openAdminSetup();
+      }
       const raw = document.getElementById('login-handle').value.trim();
-      if (!raw) return toast("⚠️ Please enter your name or email ID");
+      if (!raw) return toast('⚠️ Enter your Name or Email ID');
       const cleanId = raw.toLowerCase().replace(/[^a-z0-9_-]/g, '_');
-      document.getElementById('btn-login').innerText = "⏳ Opening Workspace...";
+      document.getElementById('btn-login').innerText = '⏳ Opening Workspace...';
       localStorage.setItem('cos_zero_uid', cleanId);
       state.userId = cleanId;
       await loadUserWorkspace();
       document.getElementById('login-screen').classList.add('hidden');
-      document.getElementById('btn-login').innerText = "🚀 Enter My Job Workspace";
+      document.getElementById('btn-login').innerText = '🚀 Enter My Job Workspace';
     }
 
     function switchUser() {
@@ -344,13 +431,22 @@
     }
 
     async function loadUserWorkspace() {
-      if (!state.userId) return;
+      const sys = getSysCfg();
+      if (!sys || !state.userId) return;
       document.getElementById('active-user-pill').innerText = `👤 ${state.userId} (Switch)`;
-      const resp = await callBridge({ action: 'getUser', userId: state.userId });
+      const path = `data/users/${state.userId}.json`;
 
-      if (resp.ok && resp.exists) {
-        state.userData = resp.userData;
-      } else if (resp.ok && !resp.exists) {
+      const res = await fetch(`https://api.github.com/repos/${sys.owner}/${sys.dataRepo}/contents/${path}?t=${Date.now()}`, {
+        headers: { Authorization: `Bearer ${sys.token}`, Accept: 'application/vnd.github.v3+json' }
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const decoded = decodeURIComponent(escape(atob(data.content.replace(/
+/g, ''))));
+        state.userData = JSON.parse(decoded);
+        state.fileSha = data.sha;
+      } else if (res.status === 404) {
         state.userData = {
           user_id: state.userId,
           telegram_chat_id: "",
@@ -362,7 +458,8 @@
           jobs: {},
           actions: {}
         };
-        await callBridge({ action: 'saveUser', userId: state.userId, userData: state.userData, message: `new user: ${state.userId}` });
+        state.fileSha = null;
+        await saveUserState(`register user: ${state.userId}`);
         switchTab('copilot');
       }
 
@@ -384,30 +481,66 @@
       }
 
       renderAll();
-      toast(`✅ Workspace loaded for ${state.userId}`);
+      toast(`✅ Workspace synced for ${state.userId}`);
     }
 
     async function saveUserState(msg) {
-      await callBridge({ action: 'saveUser', userId: state.userId, userData: state.userData, message: msg });
+      const sys = getSysCfg();
+      const path = `data/users/${state.userId}.json`;
+      const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(state.userData, null, 2))));
+      const body = { message: msg, content: encoded };
+      if (state.fileSha) body.sha = state.fileSha;
+
+      const res = await fetch(`https://api.github.com/repos/${sys.owner}/${sys.dataRepo}/contents/${path}`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${sys.token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const out = await res.json();
+      if (out.content?.sha) state.fileSha = out.content.sha;
     }
 
     async function triggerLiveScan() {
+      const sys = getSysCfg();
+      if (!sys || !sys.appRepo) return toast('⚠️ App Repo not configured');
       toast('⚡ Scanning LinkedIn & Job Feeds...');
-      const res = await callBridge({ action: 'triggerScan' });
-      if (res.ok) {
+      const res = await fetch(`https://api.github.com/repos/${sys.owner}/${sys.appRepo}/actions/workflows/discover_jobs.yml/dispatches`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${sys.token}`, Accept: 'application/vnd.github.v3+json' },
+        body: JSON.stringify({ ref: 'main' })
+      });
+      if (res.status === 204) {
         toast('🚀 Scan started! Click 🔄 Refresh in ~45 seconds.');
       } else {
-        toast('⚠️ Could not trigger scan. Check Admin Apps Script settings.');
+        toast('⚠️ Check that token has Actions: Read & Write permission.');
       }
     }
 
     async function geminiAI(prompt, expectJson = false) {
-      const res = await callBridge({ action: 'gemini', prompt, expectJson });
-      if (!res.ok) {
-        toast(`⚠️ AI Error: ${res.error}`);
-        throw new Error(res.error);
+      const sys = getSysCfg();
+      const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+      let lastErr = '';
+      for (const model of models) {
+        const payload = { contents: [{ parts: [{ text: prompt }] }] };
+        if (expectJson) payload.generationConfig = { responseMimeType: "application/json" };
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${sys.gemini}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok && data.candidates?.[0]?.content?.parts?.[0]?.text) {
+          let raw = data.candidates[0].content.parts[0].text.trim();
+          if (expectJson) {
+            raw = raw.replace(/^```json\s*/i, '').replace(/```\s*$/i, '');
+            return JSON.parse(raw);
+          }
+          return raw;
+        }
+        lastErr = data.error?.message || `HTTP ${res.status}`;
       }
-      return res.data;
+      toast(`⚠️ Gemini Error: ${lastErr}`);
+      throw new Error(lastErr);
     }
 
     async function parseAndSaveResume() {
@@ -739,7 +872,7 @@
     function closeModal() { document.getElementById('modal-overlay').classList.add('hidden'); }
 
     window.onload = async () => {
-      if (state.userId) {
+      if (getSysCfg() && state.userId) {
         document.getElementById('login-screen').classList.add('hidden');
         await loadUserWorkspace();
       }
