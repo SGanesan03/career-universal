@@ -1,30 +1,33 @@
-# 🚀 CareerOS Universal — Multi-User AI Job & Outreach Platform
+# 🚀 CareerOS Zero-Config — End-User Ready AI Job & Outreach SaaS
 
-A 100% free, generic, multi-user career automation SaaS hosted on **GitHub Pages**, powered by **Google Gemini AI**, with isolated per-user JSON workspaces (`data/users/<user_id>.json`) and personal **Telegram Push Notifications**.
+End-users **never** need a GitHub account, GitHub token, or API key! They simply open your website link, enter their Name/Email, upload their PDF resume, and start applying. Meanwhile, all user resumes stay 100% encrypted & isolated inside your **Private GitHub Data Repo**.
 
-## Complete Setup Guide (100% Chrome Browser)
+## One-Time Admin Setup (5 Minutes in Chrome)
 
-### Step 1: Create Private GitHub Repo & Upload Files
-1. Open [github.com](https://github.com) -> click **+** -> **New repository**.
-2. Name it `careeros-universal`, select **Private** (protects all users' resume data), and click **Create repository**.
-3. Upload the entire `careeros-universal` folder contents (`index.html`, `scraper_worker.py`, `requirements.txt`, `data/users/.gitkeep`, and `.github/workflows/discover_jobs.yml`).
+### Step 1: Create 2 GitHub Repositories
+1. **Public App Repo (`careeros-app`)**: Host the frontend (`index.html`, `scraper_worker.py`, `requirements.txt`, `.github/workflows/discover_jobs.yml`). Enable **Settings -> Pages -> Branch: `main` (`/root`) -> Save** to get your public Website URL.
+2. **Private Data Repo (`careeros-private-data`)**: Create a **Private** repository with a single empty file `data/users/.gitkeep`. All users' resumes and job histories are stored safely here!
 
-### Step 2: Host Free on GitHub Pages
-1. Go to Repo **Settings -> Pages**.
-2. Under **Source**, select **Deploy from a branch** -> Branch: `main` (`/root`) -> **Save**.
-3. Copy your live Web App URL (`https://<username>.github.io/careeros-universal/`).
+### Step 2: Deploy the Free Google Apps Script Bridge
+1. Open [script.google.com](https://script.google.com) -> **New project**.
+2. Paste the entire code from `Code.gs` into the editor and save.
+3. Click **Project Settings (Gear icon left sidebar) -> Script Properties -> Add script property** and add:
+   - `GEMINI_API_KEY` = Your `AIzaSy...` key from [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+   - `GH_OWNER` = Your GitHub username (e.g., `sganesan03`)
+   - `GH_REPO` = `careeros-private-data`
+   - `GH_TOKEN` = Fine-grained GitHub token with **Contents (Read/Write)** on `careeros-private-data` and **Actions (Read/Write)** on `careeros-app`
+4. Click **Deploy -> New deployment -> Web app**:
+   - Execute as: **Me**
+   - Who has access: **Anyone**
+   - Click **Deploy** and copy the **Web app URL** (`https://script.google.com/macros/s/.../exec`).
 
-### Step 3: Add GitHub Actions Secrets & Permissions
-1. Go to Repo **Settings -> Secrets and variables -> Actions -> New repository secret**:
-   - `GEMINI_API_KEY` = Your free key from [aistudio.google.com](https://aistudio.google.com)
-   - `TELEGRAM_BOT_TOKEN` = Your bot token from `@BotFather`
-   - `WEB_APP_URL` = Your GitHub Pages URL from Step 2
-2. Go to **Settings -> Actions -> General -> Workflow permissions** -> select **Read and write permissions** -> **Save**.
+### Step 3: Paste Bridge URL into `index.html`
+1. Edit `index.html` in `careeros-app` and replace `PASTE_YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE` with your Apps Script Web App URL.
 
-### Step 4: How Any User Can Register & Use It
-1. Generate a GitHub Fine-Grained Token (**Profile Settings -> Developer settings -> Personal access tokens -> Fine-grained tokens**) with **Contents: Read & Write** and **Actions: Read & Write** for this repo.
-2. Open your GitHub Pages Web App URL in Chrome -> go to **👤 User Account & API Setup**:
-   - Enter any **Unique User Handle** (e.g., `selvaraj_98`, `arun_dev`, `priya_ui`). Each handle automatically creates its own isolated database file (`data/users/<handle>.json`).
-   - Enter the Repo Owner, Repo Name, Token, and Gemini API Key -> click **Connect My Personal Workspace**.
-3. Go to **🧠 AI Resume & Career Audit**:
-   - Upload your PDF resume, set your target roles, blacklist keywords, and your personal **Telegram Chat ID** (from `@userinfobot`), then click **Save My Profile & Preferences** and **⚡ Trigger Live Scan**!
+### Step 4: Add Secrets to `careeros-app` (For 8 AM – 8 PM Auto-Scan)
+Go to `careeros-app` **Settings -> Secrets and variables -> Actions** and add:
+- `GEMINI_API_KEY` = Your `AIzaSy...` key
+- `TELEGRAM_BOT_TOKEN` = Token from `@BotFather`
+- `WEB_APP_URL` = Your GitHub Pages URL
+- `DATA_REPO_FULL_NAME` = `sganesan03/careeros-private-data`
+- `GH_DATA_TOKEN` = Same Fine-Grained GitHub token

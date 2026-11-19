@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CareerOS Universal | Multi-User AI Job & Outreach Platform</title>
+  <title>CareerOS AI | Autonomous Job Search & Outreach Platform</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -21,16 +21,48 @@
 </head>
 <body class="min-h-screen flex flex-col">
 
+  <!-- ADMIN ONE-TIME CONFIG: Paste your Google Apps Script Web App URL below -->
+  <script>
+    const BACKEND_BRIDGE_URL = "PASTE_YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE";
+  </script>
+
+  <!-- END-USER ONBOARDING / LOGIN MODAL (ZERO TECHNICAL SETUP FOR USERS) -->
+  <div id="login-screen" class="fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-8 shadow-2xl space-y-5">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-xl naukri-grad text-white flex items-center justify-center font-extrabold text-xl">C</div>
+        <div>
+          <h2 class="font-extrabold text-xl text-slate-900">CareerOS <span class="text-[#0a66c2]">AI</span></h2>
+          <p class="text-xs text-slate-500">Zero-Noise AI Job Search & Recruiter Outreach</p>
+        </div>
+      </div>
+
+      <p class="text-sm text-slate-600 leading-relaxed">
+        Enter your name or email ID to open your personal job workspace. No API keys or technical setup required!
+      </p>
+
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs font-bold text-slate-700 uppercase">Your Name or Email ID</label>
+          <input id="login-handle" type="text" placeholder="e.g., selvaraj or priya@gmail.com" class="w-full bg-slate-50 border border-slate-300 focus:border-[#0a66c2] outline-none rounded-xl px-4 py-3 text-sm font-semibold mt-1" />
+        </div>
+        <button onclick="loginEndUser()" id="btn-login" class="brand-blue text-white w-full py-3 rounded-xl text-sm font-bold shadow-md">
+          🚀 Enter My Job Workspace
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- TOP NAVBAR -->
   <header class="bg-white border-b border-slate-200 sticky top-0 z-40 px-6 py-3 flex flex-wrap items-center justify-between gap-4">
     <div class="flex items-center gap-3">
       <div class="w-10 h-10 rounded-xl naukri-grad text-white flex items-center justify-center font-extrabold text-lg shadow-sm">C</div>
       <div>
         <div class="flex items-center gap-2">
-          <h1 class="font-extrabold text-lg text-slate-900 tracking-tight">CareerOS <span class="text-[#0a66c2]">Universal</span></h1>
-          <span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">Multi-User SaaS</span>
+          <h1 class="font-extrabold text-lg text-slate-900 tracking-tight">CareerOS <span class="text-[#0a66c2]">AI</span></h1>
+          <span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">Zero-Config SaaS</span>
         </div>
-        <p class="text-xs text-slate-500">Zero-Noise Discovery • Recruiter Cold Outreach • Interview Copilot</p>
+        <p class="text-xs text-slate-500">Smart Job Feed • Direct HR Outreach • Interview Copilot</p>
       </div>
     </div>
 
@@ -39,9 +71,9 @@
     </div>
 
     <div class="flex items-center gap-2">
-      <span id="active-user-pill" class="hidden md:inline-block bg-blue-50 text-[#0a66c2] border border-blue-200 px-3 py-1.5 rounded-full text-xs font-bold">Guest</span>
-      <button onclick="triggerLiveScan()" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-full text-xs font-semibold shadow-sm">⚡ Trigger Live Scan</button>
-      <button onclick="syncUserWorkspace()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-2 rounded-full text-xs font-semibold">🔄 Sync</button>
+      <button onclick="switchUser()" class="bg-blue-50 hover:bg-blue-100 text-[#0a66c2] border border-blue-200 px-3.5 py-1.5 rounded-full text-xs font-bold" id="active-user-pill">👤 Guest</button>
+      <button onclick="triggerLiveScan()" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-full text-xs font-semibold shadow-sm">⚡ Find New Jobs</button>
+      <button onclick="loadUserWorkspace()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-2 rounded-full text-xs font-semibold">🔄 Refresh</button>
     </div>
   </header>
 
@@ -54,20 +86,20 @@
   <!-- MAIN 3-COLUMN WORKSPACE -->
   <div class="flex-1 max-w-[1440px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 p-6">
 
-    <!-- LEFT SIDEBAR (3 COLS) -->
+    <!-- LEFT SIDEBAR -->
     <aside class="lg:col-span-3 space-y-4">
       <div class="card p-5 space-y-4">
         <div class="flex items-center gap-3">
           <div class="w-12 h-12 rounded-full bg-blue-100 text-[#0a66c2] font-extrabold text-lg flex items-center justify-center" id="avatar-initials">U</div>
           <div class="overflow-hidden">
-            <h2 class="font-bold text-slate-900 text-base truncate" id="side-name">Welcome User</h2>
-            <p class="text-xs text-slate-500 truncate" id="side-role">Login / Setup Workspace</p>
+            <h2 class="font-bold text-slate-900 text-base truncate" id="side-name">Welcome</h2>
+            <p class="text-xs text-slate-500 truncate" id="side-role">Upload resume to start</p>
           </div>
         </div>
 
         <div class="space-y-1.5">
           <div class="flex justify-between text-xs font-semibold">
-            <span class="text-slate-600">Profile & AI Strength</span>
+            <span class="text-slate-600">Profile Strength</span>
             <span class="text-[#0a66c2]" id="profile-score">25%</span>
           </div>
           <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
@@ -101,21 +133,17 @@
           <span class="text-xs text-slate-400">HR Finder</span>
         </button>
         <button onclick="switchTab('tracker')" id="nav-tracker" class="nav-btn w-full text-left px-5 py-3 flex items-center justify-between hover:bg-slate-50">
-          <span>📊 Lifecycle & CSV Tracker</span>
+          <span>📊 Application Tracker</span>
           <span class="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full" id="badge-tracker">0</span>
         </button>
         <button onclick="switchTab('copilot')" id="nav-copilot" class="nav-btn w-full text-left px-5 py-3 flex items-center justify-between hover:bg-slate-50">
-          <span>🧠 AI Resume & Career Audit</span>
-          <span class="text-xs text-purple-600 font-semibold">Pro</span>
-        </button>
-        <button onclick="switchTab('settings')" id="nav-settings" class="nav-btn w-full text-left px-5 py-3 flex items-center justify-between hover:bg-slate-50">
-          <span>👤 User Account & API Setup</span>
-          <span class="text-xs text-slate-400">Multi-User</span>
+          <span>📄 My Resume & Preferences</span>
+          <span class="text-xs text-purple-600 font-semibold">AI</span>
         </button>
       </nav>
     </aside>
 
-    <!-- CENTER WORKSPACE (9 COLS) -->
+    <!-- CENTER WORKSPACE -->
     <main class="lg:col-span-9 space-y-6">
 
       <!-- TAB 1: SMART JOB FEED -->
@@ -128,7 +156,7 @@
             <button onclick="setCatFilter('C')" class="bg-slate-100 text-slate-700 hover:bg-slate-200 px-3.5 py-1.5 rounded-full text-xs font-semibold">✉️ Cat C: Direct HR Email</button>
             <button onclick="setCatFilter('D')" class="bg-slate-100 text-slate-700 hover:bg-slate-200 px-3.5 py-1.5 rounded-full text-xs font-semibold">💬 Cat D: Hiring Posts</button>
           </div>
-          <div class="text-xs text-slate-500 font-medium">Auto-Scan: <b>8:00 AM – 8:00 PM</b> • User-Isolated Queue</div>
+          <div class="text-xs text-slate-500 font-medium">Auto-Alerts: <b>8:00 AM – 8:00 PM</b></div>
         </div>
 
         <div id="jobs-feed-list" class="space-y-4"></div>
@@ -138,8 +166,8 @@
       <section id="tab-outreach" class="hidden space-y-5">
         <div class="card p-6 space-y-4">
           <div>
-            <h2 class="text-lg font-extrabold text-slate-900">📧 Hidden Job Market: Direct Recruiter & Hiring Manager Outreach</h2>
-            <p class="text-xs text-slate-500">Find decision-makers at any target company via safe X-Ray links and generate personalized cold emails + LinkedIn notes.</p>
+            <h2 class="text-lg font-extrabold text-slate-900">📧 Hidden Job Market: Recruiter & Hiring Manager Outreach</h2>
+            <p class="text-xs text-slate-500">Find decision-makers at any target company and generate tailored cold emails + LinkedIn connection notes.</p>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
             <input id="outreach-company" type="text" placeholder="Target Company (e.g., Zoho, Freshworks, Stripe)" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm" />
@@ -150,14 +178,14 @@
         </div>
       </section>
 
-      <!-- TAB 3: TRACKER & ANALYTICS -->
+      <!-- TAB 3: TRACKER -->
       <section id="tab-tracker" class="hidden space-y-5">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div class="card p-5 md:col-span-2 flex flex-col justify-between">
             <div class="flex items-center justify-between mb-3">
               <div>
-                <h2 class="text-lg font-extrabold text-slate-900">📊 Personal Application Funnel</h2>
-                <p class="text-xs text-slate-500">5-day silent applications automatically flag <b>Follow_Up_Due</b> on your Telegram.</p>
+                <h2 class="text-lg font-extrabold text-slate-900">📊 Application Lifecycle Tracker</h2>
+                <p class="text-xs text-slate-500">5-day silent applications automatically trigger a Telegram follow-up reminder.</p>
               </div>
               <button onclick="exportCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-semibold">📥 Export CSV</button>
             </div>
@@ -182,15 +210,15 @@
         </div>
       </section>
 
-      <!-- TAB 4: AI RESUME LAB & SKILL-GAP AUDIT -->
+      <!-- TAB 4: RESUME & PREFERENCES -->
       <section id="tab-copilot" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="card p-6 space-y-4">
-          <h2 class="text-lg font-extrabold text-slate-900">📄 Personal Resume & Job Preferences</h2>
-          <p class="text-xs text-slate-500">Upload your PDF resume. Gemini parses your skills and saves them exclusively to your user workspace.</p>
+          <h2 class="text-lg font-extrabold text-slate-900">📄 Upload Resume & Job Preferences</h2>
+          <p class="text-xs text-slate-500">Upload your PDF resume once. Our AI extracts your skills and automatically matches fresh jobs for you.</p>
 
           <div class="border-2 border-dashed border-slate-200 rounded-xl p-5 text-center space-y-2 bg-slate-50">
             <input type="file" id="resume-upload" accept=".pdf" class="text-xs text-slate-600" />
-            <button onclick="parseAndSaveResume()" class="brand-blue text-white px-5 py-2 rounded-xl text-xs font-semibold block mx-auto mt-2">✨ Parse Resume with Gemini AI</button>
+            <button onclick="parseAndSaveResume()" class="brand-blue text-white px-5 py-2 rounded-xl text-xs font-semibold block mx-auto mt-2">✨ Parse Resume with AI</button>
           </div>
 
           <div class="space-y-3 pt-2">
@@ -207,58 +235,25 @@
               <input id="pref-blacklist" type="text" placeholder="e.g., Java, PHP, Sales" class="w-full bg-rose-50/40 border border-rose-200 rounded-xl px-3.5 py-2 text-sm mt-1" />
             </div>
             <div>
-              <label class="text-xs font-bold text-blue-600">Your Personal Telegram Chat ID (For Push Alerts)</label>
-              <input id="pref-tg-chat" type="text" placeholder="Get numeric ID from @userinfobot on Telegram" class="w-full bg-blue-50/40 border border-blue-200 rounded-xl px-3.5 py-2 text-sm mt-1" />
+              <label class="text-xs font-bold text-blue-600">Telegram Chat ID (Optional — for instant job alerts)</label>
+              <input id="pref-tg-chat" type="text" placeholder="Message @userinfobot on Telegram to get your ID" class="w-full bg-blue-50/40 border border-blue-200 rounded-xl px-3.5 py-2 text-sm mt-1" />
             </div>
-            <button onclick="saveProfilePreferences()" class="bg-slate-900 hover:bg-slate-800 text-white w-full py-2.5 rounded-xl text-xs font-semibold">💾 Save My Profile & Preferences</button>
+            <button onclick="saveProfilePreferences()" class="bg-slate-900 hover:bg-slate-800 text-white w-full py-2.5 rounded-xl text-xs font-semibold">💾 Save Preferences</button>
           </div>
         </div>
 
         <div class="card p-6 space-y-4">
           <div class="flex items-center justify-between">
-            <h2 class="text-lg font-extrabold text-slate-900">📈 Weekly AI Skill-Gap & Market Audit</h2>
+            <h2 class="text-lg font-extrabold text-slate-900">📈 AI Skill-Gap & Market Audit</h2>
             <button onclick="runCareerAudit()" class="bg-purple-600 hover:bg-purple-700 text-white px-3.5 py-2 rounded-xl text-xs font-semibold">🔍 Run AI Audit</button>
           </div>
           <div id="audit-box" class="bg-purple-50 border border-purple-100 rounded-xl p-4 text-xs text-purple-950 whitespace-pre-wrap leading-relaxed">
-            Click "Run AI Audit" to analyze your resume skills against live market jobs and discover missing high-paying keywords.
+            Click "Run AI Audit" to compare your resume against live job market requirements.
           </div>
           <div>
-            <h3 class="text-xs font-bold uppercase text-slate-400 mb-2">My Parsed Resume Profile</h3>
+            <h3 class="text-xs font-bold uppercase text-slate-400 mb-2">Extracted Resume Profile</h3>
             <pre id="resume-json-preview" class="bg-slate-900 text-emerald-300 p-4 rounded-xl text-xs overflow-auto max-h-64">No resume uploaded yet.</pre>
           </div>
-        </div>
-      </section>
-
-      <!-- TAB 5: MULTI-USER ACCOUNT & REPO CONNECTION -->
-      <section id="tab-settings" class="hidden max-w-2xl card p-6 space-y-4">
-        <div class="border-b border-slate-100 pb-3">
-          <h2 class="text-lg font-extrabold text-slate-900">👤 Multi-User Workspace Login & Setup</h2>
-          <p class="text-xs text-slate-500">Any user can enter their own unique <b>User ID / Handle</b> to maintain a completely isolated resume, job feed, and tracking history.</p>
-        </div>
-
-        <div class="space-y-3">
-          <div class="bg-blue-50/60 border border-blue-200 p-4 rounded-xl space-y-2">
-            <label class="text-xs font-extrabold text-[#0a66c2] uppercase">1. Your Unique User Handle (Creates Your Isolated Workspace)</label>
-            <input id="cfg-userid" type="text" placeholder="e.g., selvaraj_98 or your email prefix" class="w-full bg-white border border-blue-300 rounded-xl px-3.5 py-2 text-sm font-semibold" />
-          </div>
-
-          <div>
-            <label class="text-xs font-bold text-slate-700">2. GitHub Repo Owner Username</label>
-            <input id="cfg-user" type="text" placeholder="e.g., selvaraj-dev" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm mt-1" />
-          </div>
-          <div>
-            <label class="text-xs font-bold text-slate-700">3. Private Repository Name</label>
-            <input id="cfg-repo" type="text" placeholder="e.g., careeros-universal" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm mt-1" />
-          </div>
-          <div>
-            <label class="text-xs font-bold text-slate-700">4. GitHub Fine-Grained Token (Contents: Read/Write + Actions: Read/Write)</label>
-            <input id="cfg-token" type="password" placeholder="github_pat_..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm mt-1" />
-          </div>
-          <div>
-            <label class="text-xs font-bold text-slate-700">5. Your Personal Google Gemini API Key (Free Tier)</label>
-            <input id="cfg-gemini" type="password" placeholder="AIzaSy..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm mt-1" />
-          </div>
-          <button onclick="saveSystemConfig()" class="brand-blue text-white w-full py-2.5 rounded-xl text-sm font-bold">🚀 Connect My Personal Workspace</button>
         </div>
       </section>
 
@@ -280,8 +275,9 @@
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
     let state = {
+      userId: localStorage.getItem('cos_zero_uid') || '',
       userData: {
-        user_id: "default_user",
+        user_id: "",
         telegram_chat_id: "",
         target_roles: [],
         locations: ["Chennai", "Remote"],
@@ -291,34 +287,19 @@
         jobs: {},
         actions: {}
       },
-      fileSha: null,
       catFilter: 'ALL',
       chart: null
     };
-
-    function sanitizeId(raw) {
-      return (raw || 'default_user').toLowerCase().replace(/[^a-z0-9_-]/g, '_');
-    }
-
-    function cfg() {
-      return {
-        userId: sanitizeId(localStorage.getItem('cos_userid') || ''),
-        user: localStorage.getItem('cos_user') || '',
-        repo: localStorage.getItem('cos_repo') || '',
-        token: localStorage.getItem('cos_token') || '',
-        gemini: localStorage.getItem('cos_gemini') || ''
-      };
-    }
 
     function toast(msg) {
       const el = document.getElementById('toast');
       document.getElementById('toast-msg').innerText = msg;
       el.classList.remove('hidden');
-      setTimeout(() => el.classList.add('hidden'), 4000);
+      setTimeout(() => el.classList.add('hidden'), 4500);
     }
 
     function switchTab(name) {
-      ['feed', 'outreach', 'tracker', 'copilot', 'settings'].forEach(t => {
+      ['feed', 'outreach', 'tracker', 'copilot'].forEach(t => {
         document.getElementById('tab-' + t).classList.add('hidden');
         document.getElementById('nav-' + t).classList.remove('nav-active');
       });
@@ -332,41 +313,46 @@
       renderAll();
     }
 
-    function saveSystemConfig() {
-      const uid = sanitizeId(document.getElementById('cfg-userid').value.trim());
-      localStorage.setItem('cos_userid', uid);
-      localStorage.setItem('cos_user', document.getElementById('cfg-user').value.trim());
-      localStorage.setItem('cos_repo', document.getElementById('cfg-repo').value.trim());
-      localStorage.setItem('cos_token', document.getElementById('cfg-token').value.trim());
-      localStorage.setItem('cos_gemini', document.getElementById('cfg-gemini').value.trim());
-      toast(`✅ Workspace "${uid}" connected! Syncing...`);
-      syncUserWorkspace();
-    }
-
-    function getUserFilePath() {
-      return `data/users/${cfg().userId}.json`;
-    }
-
-    async function syncUserWorkspace() {
-      const c = cfg();
-      if (!c.user || !c.repo || !c.token || !localStorage.getItem('cos_userid')) {
-        switchTab('settings');
-        return;
+    async function callBridge(payload) {
+      if (!BACKEND_BRIDGE_URL || BACKEND_BRIDGE_URL.includes("PASTE_YOUR")) {
+        toast("⚠️ Admin has not pasted the Google Apps Script URL in index.html yet.");
+        throw new Error("Missing BACKEND_BRIDGE_URL");
       }
-      document.getElementById('active-user-pill').innerText = `👤 ${c.userId}`;
-      const path = getUserFilePath();
-      const res = await fetch(`https://api.github.com/repos/${c.user}/${c.repo}/contents/${path}?t=${Date.now()}`, {
-        headers: { Authorization: `Bearer ${c.token}`, Accept: 'application/vnd.github.v3+json' }
+      const res = await fetch(BACKEND_BRIDGE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
       });
+      return await res.json();
+    }
 
-      if (res.ok) {
-        const data = await res.json();
-        const decoded = decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))));
-        state.userData = JSON.parse(decoded);
-        state.fileSha = data.sha;
-      } else if (res.status === 404) {
+    async function loginEndUser() {
+      const raw = document.getElementById('login-handle').value.trim();
+      if (!raw) return toast("⚠️ Please enter your name or email ID");
+      const cleanId = raw.toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+      document.getElementById('btn-login').innerText = "⏳ Opening Workspace...";
+      localStorage.setItem('cos_zero_uid', cleanId);
+      state.userId = cleanId;
+      await loadUserWorkspace();
+      document.getElementById('login-screen').classList.add('hidden');
+      document.getElementById('btn-login').innerText = "🚀 Enter My Job Workspace";
+    }
+
+    function switchUser() {
+      document.getElementById('login-handle').value = state.userId;
+      document.getElementById('login-screen').classList.remove('hidden');
+    }
+
+    async function loadUserWorkspace() {
+      if (!state.userId) return;
+      document.getElementById('active-user-pill').innerText = `👤 ${state.userId} (Switch)`;
+      const resp = await callBridge({ action: 'getUser', userId: state.userId });
+
+      if (resp.ok && resp.exists) {
+        state.userData = resp.userData;
+      } else if (resp.ok && !resp.exists) {
         state.userData = {
-          user_id: c.userId,
+          user_id: state.userId,
           telegram_chat_id: "",
           target_roles: ["Python Developer", "Full Stack Engineer"],
           locations: ["Chennai", "Remote"],
@@ -376,8 +362,8 @@
           jobs: {},
           actions: {}
         };
-        state.fileSha = null;
-        await persistUserWorkspace(`register user: ${c.userId}`);
+        await callBridge({ action: 'saveUser', userId: state.userId, userData: state.userData, message: `new user: ${state.userId}` });
+        switchTab('copilot');
       }
 
       document.getElementById('pref-roles').value = (state.userData.target_roles || []).join(', ');
@@ -387,82 +373,62 @@
 
       if (state.userData.resume) {
         document.getElementById('resume-json-preview').innerText = JSON.stringify(state.userData.resume, null, 2);
-        document.getElementById('side-name').innerText = state.userData.resume.name || c.userId;
-        document.getElementById('side-role').innerText = (state.userData.target_roles || [])[0] || 'Active Job Seeker';
-        document.getElementById('avatar-initials').innerText = (state.userData.resume.name || c.userId)[0].toUpperCase();
+        document.getElementById('side-name').innerText = state.userData.resume.name || state.userId;
+        document.getElementById('side-role').innerText = (state.userData.target_roles || [])[0] || 'Ready for Jobs';
+        document.getElementById('avatar-initials').innerText = (state.userData.resume.name || state.userId)[0].toUpperCase();
         document.getElementById('profile-score').innerText = '100%';
         document.getElementById('profile-bar').style.width = '100%';
       } else {
-        document.getElementById('side-name').innerText = c.userId;
+        document.getElementById('side-name').innerText = state.userId;
+        document.getElementById('avatar-initials').innerText = state.userId[0].toUpperCase();
       }
 
       renderAll();
-      toast(`✅ Synced workspace for ${c.userId}`);
+      toast(`✅ Workspace loaded for ${state.userId}`);
     }
 
-    async function persistUserWorkspace(commitMsg) {
-      const c = cfg();
-      const path = getUserFilePath();
-      const content = btoa(unescape(encodeURIComponent(JSON.stringify(state.userData, null, 2))));
-      const body = { message: commitMsg, content };
-      if (state.fileSha) body.sha = state.fileSha;
-
-      const res = await fetch(`https://api.github.com/repos/${c.user}/${c.repo}/contents/${path}`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${c.token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-      const out = await res.json();
-      if (out.content?.sha) state.fileSha = out.content.sha;
+    async function saveUserState(msg) {
+      await callBridge({ action: 'saveUser', userId: state.userId, userData: state.userData, message: msg });
     }
 
     async function triggerLiveScan() {
-      const c = cfg();
-      if (!c.token) return switchTab('settings');
-      toast('⚡ Triggering Multi-User Live Job Scan...');
-      const res = await fetch(`https://api.github.com/repos/${c.user}/${c.repo}/actions/workflows/discover_jobs.yml/dispatches`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${c.token}`, Accept: 'application/vnd.github.v3+json' },
-        body: JSON.stringify({ ref: 'main' })
-      });
-      if (res.status === 204) {
-        toast('🚀 Scan running! Click 🔄 Sync in ~45 seconds.');
+      toast('⚡ Scanning LinkedIn & Job Feeds...');
+      const res = await callBridge({ action: 'triggerScan' });
+      if (res.ok) {
+        toast('🚀 Scan started! Click 🔄 Refresh in ~45 seconds.');
       } else {
-        toast('⚠️ Check that your GitHub token has Actions: Read & Write permission.');
+        toast('⚠️ Could not trigger scan. Check Admin Apps Script settings.');
       }
     }
 
-    async function geminiAI(prompt, jsonMode = false) {
-      const c = cfg();
-      const payload = { contents: [{ parts: [{ text: prompt }] }] };
-      if (jsonMode) payload.generationConfig = { responseMimeType: "application/json" };
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${c.gemini}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      return jsonMode ? JSON.parse(raw) : raw;
+    async function geminiAI(prompt, expectJson = false) {
+      const res = await callBridge({ action: 'gemini', prompt, expectJson });
+      if (!res.ok) {
+        toast(`⚠️ AI Error: ${res.error}`);
+        throw new Error(res.error);
+      }
+      return res.data;
     }
 
     async function parseAndSaveResume() {
       const inp = document.getElementById('resume-upload');
-      if (!inp.files.length) return toast('⚠️ Select a PDF resume first');
-      toast('⏳ Parsing PDF with Gemini AI...');
+      if (!inp.files.length) return toast('⚠️ Please choose a PDF resume file first');
+      toast('⏳ Parsing PDF resume with AI...');
       const buf = await inp.files[0].arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
       let text = '';
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const content = await page.getTextContent();
-        text += content.items.map(it => it.str).join(' ') + '';
+        text += content.items.map(it => it.str).join(' ') + '
+';
       }
       const parsed = await geminiAI(`Extract structured resume JSON with keys: name, email, phone, summary, skills (array), experience (array of {role, company, duration}), inferred_roles (array of 3 roles). Resume: ${text.slice(0, 12000)}`, true);
       state.userData.resume = parsed;
       if (!state.userData.target_roles?.length) state.userData.target_roles = parsed.inferred_roles || [];
-      await persistUserWorkspace(`user ${cfg().userId}: update resume`);
-      syncUserWorkspace();
+      await saveUserState(`user ${state.userId}: update resume`);
+      await loadUserWorkspace();
+      toast('✅ Resume parsed and saved!');
     }
 
     async function saveProfilePreferences() {
@@ -470,8 +436,8 @@
       state.userData.locations = document.getElementById('pref-locations').value.split(',').map(s => s.trim()).filter(Boolean);
       state.userData.blacklist = document.getElementById('pref-blacklist').value.split(',').map(s => s.trim()).filter(Boolean);
       state.userData.telegram_chat_id = document.getElementById('pref-tg-chat').value.trim();
-      await persistUserWorkspace(`user ${cfg().userId}: update preferences`);
-      toast('✅ Personal preferences & Telegram Chat ID saved!');
+      await saveUserState(`user ${state.userId}: update preferences`);
+      toast('✅ Preferences saved!');
     }
 
     function renderAll() {
@@ -504,7 +470,7 @@
       });
 
       if (!visibleHashes.length) {
-        listEl.innerHTML = `<div class="card p-10 text-center text-slate-500">No queued jobs in your feed right now. Upload your resume in <b>AI Resume & Career Audit</b> and click <b>⚡ Trigger Live Scan</b>.</div>`;
+        listEl.innerHTML = `<div class="card p-10 text-center text-slate-500">No queued jobs right now. Upload your PDF resume in <b>📄 My Resume & Preferences</b> and click <b>⚡ Find New Jobs</b>!</div>`;
       } else {
         const catMeta = {
           A: { label: '⚡ One-Click Apply', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
@@ -567,7 +533,7 @@
     async function updateStatus(h, status, extra = {}) {
       state.userData.actions[h] = { ...(state.userData.actions[h] || {}), status, ...extra, updated_at: new Date().toISOString() };
       renderAll();
-      await persistUserWorkspace(`user ${cfg().userId}: ${h} -> ${status}`);
+      await saveUserState(`user ${state.userId}: ${h} -> ${status}`);
       toast(`✅ Marked as ${status}`);
     }
 
@@ -757,10 +723,11 @@
         const j = jobs[h] || {};
         rows.push([j.title, j.company, j.source, j.category, j.match_score, actions[h].status, actions[h].updated_at]);
       });
-      const csv = rows.map(r => r.map(v => `"${(v ?? '').toString().replace(/"/g, '""')}"`).join(',')).join('');
+      const csv = rows.map(r => r.map(v => `"${(v ?? '').toString().replace(/"/g, '""')}"`).join(',')).join('
+');
       const a = document.createElement('a');
       a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-      a.download = `CareerOS_${cfg().userId}_Applications.csv`;
+      a.download = `CareerOS_${state.userId}_Applications.csv`;
       a.click();
     }
 
@@ -771,14 +738,11 @@
     }
     function closeModal() { document.getElementById('modal-overlay').classList.add('hidden'); }
 
-    window.onload = () => {
-      const c = cfg();
-      document.getElementById('cfg-userid').value = localStorage.getItem('cos_userid') || '';
-      document.getElementById('cfg-user').value = c.user;
-      document.getElementById('cfg-repo').value = c.repo;
-      document.getElementById('cfg-token').value = c.token;
-      document.getElementById('cfg-gemini').value = c.gemini;
-      syncUserWorkspace();
+    window.onload = async () => {
+      if (state.userId) {
+        document.getElementById('login-screen').classList.add('hidden');
+        await loadUserWorkspace();
+      }
     };
   </script>
 </body>

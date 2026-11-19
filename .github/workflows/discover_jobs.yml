@@ -1,4 +1,4 @@
-name: CareerOS Multi-User Job Discovery & Telegram Push
+name: CareerOS Zero-Config Job Discovery & Telegram Push
 
 on:
   schedule:
@@ -13,7 +13,15 @@ jobs:
   multi-user-scan:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout App Code
+        uses: actions/checkout@v4
+
+      - name: Checkout Private User Data Repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.DATA_REPO_FULL_NAME }}
+          token: ${{ secrets.GH_DATA_TOKEN }}
+          path: private_data
 
       - uses: actions/setup-python@v5
         with:
@@ -23,16 +31,18 @@ jobs:
       - run: pip install -r requirements.txt
 
       - name: Run Multi-User Job Discovery & Telegram Notifications
+        working-directory: private_data
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           WEB_APP_URL: ${{ secrets.WEB_APP_URL }}
-        run: python scraper_worker.py
+        run: python ../scraper_worker.py
 
-      - name: Save All User Workspaces to GitHub
+      - name: Push Updated User Workspaces to Private Repo
+        working-directory: private_data
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add data/users/
-          git diff --quiet && git diff --staged --quiet || git commit -m "chore: update multi-user job queues & followups [skip ci]"
+          git diff --quiet && git diff --staged --quiet || git commit -m "chore: update user job feeds & followups [skip ci]"
           git push

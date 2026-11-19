@@ -188,7 +188,6 @@ def process_user_workspace(user_path):
     jobs_map = user_data.setdefault("jobs", {})
     actions_map = user_data.setdefault("actions", {})
 
-    # 1. Check 5-Day Follow-Up Reminders for this user
     now = datetime.utcnow()
     due = []
     for h, act in actions_map.items():
@@ -205,7 +204,6 @@ def process_user_workspace(user_path):
 " + "
 ".join(due))
 
-    # 2. Scan & Match New Jobs if user has uploaded a resume
     resume = user_data.get("resume")
     if not resume or not gemini:
         save_json(user_path, user_data)
@@ -249,7 +247,7 @@ def process_user_workspace(user_path):
 ".join(newly_matched)
             + "
 
-Open *CareerOS Universal* to Tailor Resume, Prep Interview, or Smart Apply."
+Open *CareerOS AI* to Tailor Resume, Prep Interview, or Smart Apply."
         )
 
 
